@@ -62,11 +62,12 @@ Thin sheets bow more as they get bigger, so 1 mm is best suited to the smaller s
 
 *Renders show the earlier version without the dispenser slot.*
 
-**Side dispenser (prototype, 2R):** `exports/storage_side_dispenser/` adds a sled with a printed zigzag
-spring in a floor groove, and a knob on the right side. Slide the knob forward about 21 mm and the sled's
-0.7 mm blade pushes only the bottom blank out of the front slot; the spring returns it. Three printed parts:
-tray, sled, knob (the knob's arm goes in through the wall window and plugs into the sled). Checked in CAD for
-rest fit, the full stroke, and stacking. Print the sled in PETG if the PLA spring tires.
+**Side dispenser (prototype, 2R):** `exports/storage_side_dispenser/` adds a sled in a floor groove and a
+rounded knob with grip bumps on the right side. Slide the knob forward 15 mm and the sled's 0.7 mm blade pushes
+only the bottom blank about 10 mm out of the front slot. A short serpentine spring with round U-bends (sharp
+corners crack printed springs) returns it; each bar bends about 1.2%, and PETG lasts longer than PLA. Three
+printed parts: tray, sled with spring, knob (the knob's arm goes in through the wall window and plugs into the
+sled). Checked in CAD for rest fit, the full stroke, and stacking.
 
 ![Front of a tray with stock ticks](docs/images/tray-front-stock-ticks.png)
 

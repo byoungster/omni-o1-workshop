@@ -46,7 +46,11 @@ def _mqtt(name='p1s'):
 
 
 def report(name='p1s', timeout=15):
-    """Full status report (the P1S only sends deltas, so ask for a full push)."""
+    """Full status report (the P1S only sends deltas, so ask for a full push).
+
+    The client runs in the foreground with a deadline: paho's loop_stop() can block forever joining
+    its thread when the printer never acknowledges a packet.
+    """
     c, ip, serial = _mqtt(name)
     got = {}
 
@@ -64,12 +68,12 @@ def report(name='p1s', timeout=15):
 
     c.on_connect, c.on_message = on_connect, on_message
     c.connect(ip, 8883, 30)
-    c.loop_start()
     end = time.time() + timeout
-    while time.time() < end and 'print' not in got and 'error' not in got:
-        time.sleep(0.2)
-    c.loop_stop()
-    c.disconnect()
+    try:
+        while time.time() < end and 'print' not in got and 'error' not in got:
+            c.loop(timeout=0.5)
+    finally:
+        c.disconnect()
     if 'error' in got:
         raise RuntimeError('MQTT connect failed: ' + got['error'])
     if 'print' not in got:
@@ -77,16 +81,28 @@ def report(name='p1s', timeout=15):
     return got['print']
 
 
-def _publish(payload, name='p1s'):
-    """Send one command to the printer's request topic and wait until it is delivered."""
+def _publish(payload, name='p1s', timeout=10):
+    """Send one command to the printer's request topic (QoS 0, foreground loop, hard deadline).
+
+    QoS 1 hung forever: the P1S never acknowledged, and paho will not stop its loop thread while a
+    QoS 1 message is outstanding.
+    """
     c, ip, serial = _mqtt(name)
+    state = {}
+    c.on_connect = lambda cl, u, flags, rc, props=None: state.update(rc=rc)
     c.connect(ip, 8883, 30)
-    c.loop_start()
+    end = time.time() + timeout
     try:
-        info = c.publish('device/%s/request' % serial, json.dumps(payload), qos=1)
-        info.wait_for_publish(timeout=10)
+        while 'rc' not in state and time.time() < end:
+            c.loop(timeout=0.5)
+        if 'rc' not in state or state['rc'].is_failure:
+            raise RuntimeError('MQTT connect failed: %s' % state.get('rc', 'no CONNACK'))
+        info = c.publish('device/%s/request' % serial, json.dumps(payload), qos=0)
+        while not info.is_published() and time.time() < end:
+            c.loop(timeout=0.2)
+        if not info.is_published():
+            raise RuntimeError('command was not sent within %ds' % timeout)
     finally:
-        c.loop_stop()
         c.disconnect()
 
 
@@ -206,12 +222,13 @@ def _slice_entry(path):
     return None
 
 
-def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=None, name='p1s'):
+def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=None, name='p1s', color=None):
     """Send one plate of a sliced .gcode.3mf to the printer.
 
     Without confirm=True this only returns what would be printed. Refuses files that were not sliced
     by this pipeline, failed its safety checks, or were sliced for another printer model. With no
-    ams_slot given, picks the AMS slot whose colour matches the recipe's "ams_color" (e.g. "FFFFFF").
+    ams_slot given, picks the AMS slot whose colour matches `color` (e.g. "000000") or else the
+    recipe's "ams_color".
     """
     path = os.path.abspath(path)
     if not path.endswith('.gcode.3mf') or not os.path.isfile(path):
@@ -238,11 +255,11 @@ def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=None, name='p
     if use_ams is None:
         use_ams = bool(st['ams'])
     trays = {int(u['unit']) * 4 + int(t['slot']): t for u in st['ams'] for t in u['trays'] if t.get('type')}
-    want = (bs.load_recipe(entry['recipe']).get('ams_color') or '').upper().lstrip('#')
+    want = (color or bs.load_recipe(entry['recipe']).get('ams_color') or '').upper().lstrip('#')
     if use_ams and ams_slot is None:
         match = [i for i, t in sorted(trays.items()) if want and (t.get('color') or '').upper().startswith(want)]
         if want and not match:
-            raise RuntimeError('no AMS slot holds the recipe colour %s; load it or pass ams_slot' % want)
+            raise RuntimeError('no AMS slot holds colour %s; load it or pass ams_slot' % want)
         ams_slot = match[0] if match else 0
     tray = trays.get(ams_slot or 0, {})
     plan = {'job_id': entry['job_id'], 'plate': plate, 'objects': plate_info['objects'],

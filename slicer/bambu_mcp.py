@@ -103,13 +103,14 @@ def list_presets(category: str, contains: str = '') -> list[str]:
 
 
 @server.tool()
-def slice(recipe: str, models: list[str], job: str | None = None) -> dict:
+def slice(recipe: str, models: list[str], job: str | None = None, bed_type: str | None = None) -> dict:
     """Slice 3MF/STL files (paths or globs) with a recipe. Auto-arranges across as many plates as needed.
 
     Returns per-plate time, filament, objects, thumbnail path and safety problems. The .gcode.3mf can be
-    opened in Bambu Studio (open_in_bambu_studio) to print.
+    opened in Bambu Studio (open_in_bambu_studio) to print. bed_type overrides the recipe's plate for this
+    job (Cool Plate, Engineering Plate, High Temp Plate = smooth PEI, Textured PEI Plate, Supertack Plate).
     """
-    return bs.slice_models(recipe, models, job)
+    return bs.slice_models(recipe, models, job, bed_type=bed_type)
 
 
 @server.tool()
@@ -153,14 +154,15 @@ def chamber_light(on: bool) -> bool:
 
 @server.tool()
 def print_plate(path: str, plate: int = 1, confirm: bool = False, use_ams: bool | None = None,
-                ams_slot: int | None = None) -> dict:
+                ams_slot: int | None = None, color: str | None = None) -> dict:
     """Send one plate of a sliced .gcode.3mf to the P1S.
 
     Call first WITHOUT confirm to get the plan (objects, time, build plate to load). Only call with
     confirm=True after the user has explicitly approved that plan. Only files sliced by this pipeline
     that passed its safety checks are accepted. Needs LAN-only + Developer Mode on the printer.
+    color (hex, e.g. "000000") picks the AMS slot holding that colour; default is the recipe's ams_color.
     """
-    return bpr.print_job(path, plate, confirm, use_ams, ams_slot)
+    return bpr.print_job(path, plate, confirm, use_ams, ams_slot, color=color)
 
 
 @server.tool()

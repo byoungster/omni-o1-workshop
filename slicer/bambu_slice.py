@@ -5,7 +5,7 @@ settings on top of them. Changing a setting is a one-line, dated, diffable edit,
 and every print outcome is appended to journal.jsonl, so settings can be tuned against results.
 
 Usage:
-  python bambu_slice.py slice <recipe> <model.3mf|glob> [...] [--job NAME]
+  python bambu_slice.py slice <recipe> <model.3mf|glob> [...] [--job NAME] [--bed "High Temp Plate"]
   python bambu_slice.py set <recipe> <machine|process|filament> <key> <value> "<reason>"
   python bambu_slice.py result <job_id> <ok|warped|failed|...> "<notes>"
 """
@@ -134,8 +134,13 @@ def _check_plate(gcode, printer_model):
     return problems
 
 
-def slice_models(recipe, models, job=None, arrange=True):
+def slice_models(recipe, models, job=None, arrange=True, bed_type=None):
+    """bed_type overrides the recipe's plate for this job (e.g. whatever plate is loaded right now)."""
     r = load_recipe(recipe)
+    if bed_type:
+        if bed_type not in BED_TYPES:
+            raise ValueError('bed_type must be one of %s' % (BED_TYPES,))
+        r['bed_type'] = bed_type
     models = _resolve_models(models)
     job = job or '%s %s' % (recipe, datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
     job = re.sub(r'[^\w\- .]', '_', job)
@@ -241,9 +246,9 @@ def open_in_studio(path):
 if __name__ == '__main__':
     a = sys.argv[1:]
     if a and a[0] == 'slice':
-        job = a[a.index('--job') + 1] if '--job' in a else None
-        models = [x for i, x in enumerate(a[2:], 2) if x != '--job' and (i == 0 or a[i - 1] != '--job')]
-        e = slice_models(a[1], models, job)
+        opt = lambda k: a[a.index(k) + 1] if k in a else None
+        models = [x for i, x in enumerate(a[2:], 2) if x not in ('--job', '--bed') and a[i - 1] not in ('--job', '--bed')]
+        e = slice_models(a[1], models, opt('--job'), bed_type=opt('--bed'))
         print(json.dumps({k: e[k] for k in ('job_id', 'output', 'total_minutes', 'total_grams', 'safe_to_print', 'problems')}, indent=1))
         for p in e['plates']:
             print('  plate %d: %6.1f min %6.1f g  %s%s' % (p['plate'], p['minutes'], p['grams'], ', '.join(p['objects']),

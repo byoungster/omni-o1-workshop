@@ -113,6 +113,16 @@ def _rejected_since(st, t0):
     return any((h.get('attr'), h.get('code')) == VERIFY_FAILED and h.get('timestamp', 0) >= t0 - 5 for h in st['errors'])
 
 
+def _minutes(state):
+    """HA time sensor -> minutes, honouring its unit (ha-bambulab reports remaining time in hours)."""
+    try:
+        v = float(state['state'])
+    except (TypeError, ValueError):
+        return None
+    unit = (state.get('attributes') or {}).get('unit_of_measurement', 'min')
+    return round(v * {'h': 60, 'min': 1, 's': 1 / 60}.get(unit, 1), 1)
+
+
 def _ha_status(name='p1s'):
     """Printer state from Home Assistant (ha-bambulab), which already holds the printer's MQTT connection.
 
@@ -133,7 +143,7 @@ def _ha_status(name='p1s'):
     try:
         st = {'state': get('sensor.%s_print_status' % pre)['state'].upper(),
               'percent': get('sensor.%s_print_progress' % pre)['state'],
-              'remaining_min': get('sensor.%s_remaining_time' % pre)['state'],
+              'remaining_min': _minutes(get('sensor.%s_remaining_time' % pre)),
               'job': get('sensor.%s_task_name' % pre)['state'],
               'stage': get('sensor.%s_current_stage' % pre)['state'],
               'sd_card': get('sensor.%s_sd_card_status' % pre)['state'] == 'normal',

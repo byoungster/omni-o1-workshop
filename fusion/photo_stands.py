@@ -3,6 +3,12 @@
 The plaque's bottom edge drops into a slot that leans back LEAN degrees. The base reaches far enough
 behind the slot to keep a tall plaque from tipping (about 15% of the plaque height). Print the test
 comb first, find the slot width that holds your printed blanks snugly, then set SLOT_W.
+
+Three styles share the same footprint:
+  Minimal - smooth, chamfered (print with the photo_stands recipe)
+  Fluted  - vertical ribs across the front face (photo_stands recipe)
+  Rustic  - minimal geometry printed with fuzzy skin (photo_stands_rustic recipe); fuzzy skin also
+            roughens the slot walls, so it gets a wider slot and its own test comb.
 Always builds into a new document, so it never touches an open design.
 """
 import math
@@ -16,6 +22,11 @@ MM = 0.1  # Fusion API lengths are cm
 PLAQUE_T = 1.0
 SLOT_W = 1.4                        # 0.2 mm clearance per side; confirm with the test comb
 COMB_WIDTHS = (1.2, 1.3, 1.4, 1.5, 1.6)
+SLOT_W_RUSTIC = 1.8                 # fuzzy skin eats into the slot; confirm with the rustic comb
+COMB_WIDTHS_RUSTIC = (1.6, 1.8, 2.0, 2.2, 2.4)
+FLUTE_R = 1.5                       # fluted style: groove radius
+FLUTE_PITCH = 5.0                   # groove spacing along the front face
+STYLES = ('Minimal', 'Fluted', 'Rustic')
 SLOT_DEPTH = 9.0                    # measured along the slot
 LEAN = 15.0                         # degrees back from vertical
 BASE_H = 14.0
@@ -126,33 +137,51 @@ def largest_profile(sk):
     return max(sk.profiles, key=lambda p: p.areaProperties().area)
 
 
-def build_stand(root, lbl, us, w, h, x0):
+def build_stand(root, lbl, us, w, h, x0, y0=0.0, style='Minimal'):
     depth, length = depth_for(h), min(w + 6.0, MAX_LEN)
-    sk = root.sketches.add(root.xZConstructionPlane)
-    sk.name = lbl + ' Stand Profile'
+    sk = root.sketches.add(xz_plane(root, y0))
+    sk.name = '%s %s Stand Profile' % (lbl, style)
     sk.isVisible = False
-    polygon(sk, 0, profile_points(x0, depth))
-    polygon(sk, 0, slot_points(x0, SLOT_W))
-    body = extrude_along_y(root, largest_profile(sk), length,
-                           adsk.fusion.FeatureOperations.NewBodyFeatureOperation, name=lbl + ' Stand').bodies.item(0)
-    body.name = '%s Stand (%s in)' % (lbl, us)
-    face_label(root, body, x0 + depth, us, 6.0, 0, length, (BASE_H - CHAMFER) / 2 - 3.0)
+    polygon(sk, y0, profile_points(x0, depth))
+    polygon(sk, y0, slot_points(x0, SLOT_W_RUSTIC if style == 'Rustic' else SLOT_W))
+    body = extrude_along_y(root, largest_profile(sk), length, adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+                           name='%s %s Stand' % (lbl, style)).bodies.item(0)
+    body.name = '%s Stand %s (%s in)' % (lbl, style, us)
+    if style == 'Fluted':
+        # vertical half-round grooves across the front face, stopping below the top chamfer
+        skf = root.sketches.add(root.xYConstructionPlane)
+        skf.isVisible = False
+        n = int((length - 2 * CHAMFER) // FLUTE_PITCH)
+        start = y0 + (length - (n - 1) * FLUTE_PITCH) / 2
+        for i in range(n):
+            skf.sketchCurves.sketchCircles.addByCenterRadius(P3.create(x0 * MM, (start + i * FLUTE_PITCH) * MM, 0),
+                                                             FLUTE_R * MM)
+        profs = adsk.core.ObjectCollection.create()
+        for p in skf.profiles:
+            profs.add(p)
+        ext = root.features.extrudeFeatures
+        ei = ext.createInput(profs, adsk.fusion.FeatureOperations.CutFeatureOperation)
+        ei.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(VI.createByReal((BASE_H - CHAMFER) * MM)),
+                            adsk.fusion.ExtentDirections.PositiveExtentDirection)
+        ei.participantBodies = [body]
+        ext.add(ei).name = '%s Fluted grooves' % lbl
+    face_label(root, body, x0 + depth, us, 6.0, y0, y0 + length, (BASE_H - CHAMFER) / 2 - 3.0)
     return body
 
 
-def build_comb(root, x0):
+def build_comb(root, x0, widths=COMB_WIDTHS, y0=0.0, tag=''):
     seg, wall = 10.0, 4.0
-    length = len(COMB_WIDTHS) * (seg + wall) + wall
+    length = len(widths) * (seg + wall) + wall
     depth = depth_for(89)
-    sk = root.sketches.add(root.xZConstructionPlane)
-    sk.name = 'Slot Test Comb Profile'
+    sk = root.sketches.add(xz_plane(root, y0))
+    sk.name = 'Slot Test Comb%s Profile' % tag
     sk.isVisible = False
-    polygon(sk, 0, profile_points(x0, depth))
+    polygon(sk, y0, profile_points(x0, depth))
     body = extrude_along_y(root, sk.profiles.item(0), length,
                            adsk.fusion.FeatureOperations.NewBodyFeatureOperation, name='Slot Test Comb').bodies.item(0)
-    body.name = 'Slot Test Comb (%s-%s mm)' % (COMB_WIDTHS[0], COMB_WIDTHS[-1])
-    for i, wdt in enumerate(COMB_WIDTHS):
-        y = wall + i * (seg + wall)
+    body.name = 'Slot Test Comb%s (%s-%s mm)' % (tag, widths[0], widths[-1])
+    for i, wdt in enumerate(widths):
+        y = y0 + wall + i * (seg + wall)
         sks = root.sketches.add(xz_plane(root, y))
         sks.isVisible = False
         polygon(sks, y, slot_points(x0, wdt))
@@ -170,14 +199,20 @@ def run(_context: str):
     des = adsk.fusion.Design.cast(app.activeProduct)
     des.designType = adsk.fusion.DesignTypes.ParametricDesignType
     root = des.rootComponent
-    x = 0.0
-    build_comb(root, x)
-    x += depth_for(89) + GAP
-    for lbl, us, w, h in SIZES:
-        build_stand(root, lbl, us, w, h, x)
-        x += depth_for(h) + GAP
+    row = MAX_LEN + 40.0                     # each style gets its own row along Y
+    for r, style in enumerate(STYLES):
+        y0 = r * row
+        x = 0.0
+        if style == 'Minimal':
+            build_comb(root, x, COMB_WIDTHS, y0)
+        elif style == 'Rustic':
+            build_comb(root, x, COMB_WIDTHS_RUSTIC, y0, ' Rustic')
+        x += depth_for(89) + GAP
+        for lbl, us, w, h in SIZES:
+            build_stand(root, lbl, us, w, h, x, y0, style)
+            x += depth_for(h) + GAP
     for b in root.bRepBodies:
         bb = b.boundingBox
-        print('%-28s %6.1f x %6.1f x %5.1f mm  %5.1f g PLA' % (
+        print('%-32s %6.1f x %6.1f x %5.1f mm' % (
             b.name, (bb.maxPoint.x - bb.minPoint.x) * 10, (bb.maxPoint.y - bb.minPoint.y) * 10,
-            (bb.maxPoint.z - bb.minPoint.z) * 10, b.volume * 1.24))
+            (bb.maxPoint.z - bb.minPoint.z) * 10))

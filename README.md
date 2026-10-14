@@ -12,7 +12,8 @@ versioned settings, and LAN control of a Bambu Lab P1S.
 |---|---|
 | `exports/blanks_1mm/` | 3MF models of the 11 standard photo sizes, 1 mm thick, size label debossed 0.2 mm |
 | `exports/storage_trays/` | 3MF models of stackable trays and lids (20 blanks each) for 2R to 8R |
-| `exports/photo_stands/` | 3MF models of 15° slot stands for the plaques, plus a slot-width test comb |
+| `exports/photo_stands/` | 3MF models of 15° slot stands in three styles (Minimal, Fluted, Rustic), plus slot-width test combs |
+| `exports/o1_jigs/` | 3MF tiles of batch jigs for the xTool O1 Omni flat bed (small 330×122 and large 330×420 plates) |
 | `exports/sliced/` | Print-ready `.gcode.3mf` files for a Bambu Lab P1S (0.4 nozzle), with plate previews |
 | `fusion/` | Fusion API scripts that generate the blanks and trays from parameters |
 | `slicer/` | Bambu Studio CLI pipeline, slicing recipes, P1S LAN control, and an MCP server for Claude |
@@ -61,18 +62,53 @@ Thin sheets bow more as they get bigger, so 1 mm is best suited to the smaller s
 
 - A 15° slot holds the plaque by its bottom edge. Bases reach about 15% of the plaque height behind the slot so
   tall plaques don't tip. Each stand is labeled in inches on the back (2.5x3.5 up to 8x10).
-- **Print the test comb first.** It has slots from 1.2 to 1.6 mm. Find the one that holds your printed blank
-  snugly and set `SLOT_W` in `fusion/photo_stands.py` (default 1.4 mm).
+- Three styles on the same footprint:
+  - **Minimal**: smooth with chamfered edges.
+  - **Fluted**: vertical ribs across the front.
+  - **Rustic**: the minimal shape printed with fuzzy skin (Perlin noise) for a stone or weathered look; best in
+    wood-fill or marble PLA. Fuzzy skin also roughens the slot, so Rustic stands have a 1.8 mm slot.
+- **Print a test comb first** (1.2–1.6 mm, or 1.6–2.4 mm for Rustic). Find the slot that holds your printed blank
+  snugly and set `SLOT_W` / `SLOT_W_RUSTIC` in `fusion/photo_stands.py`.
 - Print upright as exported, no supports. Matte PLA hides layer lines.
 
-## Printing on a Bambu Lab P1S
+![Fluted stand](docs/images/stand-fluted.png)
+
+## Batch jigs for the xTool O1 Omni
+
+![Photo blank jigs](docs/images/o1-photo-blank-jigs.png)
+
+Flat-bed jigs for 1 mm photo blanks, for both O1 plates. xTool's manual calls the plates mini and standard;
+its product page calls them standard and large. By size:
+
+| Blank | Small plate, 330 × 122 mm | Large plate, 330 × 420 mm |
+|---|---|---|
+| 2R (2.5x3.5 in) | 4 | 18 |
+| 3R (3.5x5 in) | 2 | 9 |
+| 4R (4x6 in) | 2 | 6 |
+| 5R (5x7 in) | - | 4 |
+| 6R (6x8 in) | - | 4 |
+| 8R (8x10 in) | - | 2 |
+
+- Pockets are 0.9 mm deep, so a 1 mm blank sits 0.1 mm above the jig and the O1's height sensing lands on
+  the blanks, all on one plane. 0.2 mm clearance per side, corner reliefs, and a finger notch per pocket.
+- Jigs cover the print area and are cut into tiles that fit a 256 mm printer bed, with seams placed in the walls
+  between pockets where possible. Butt the tiles together on the plate (or glue them with CA).
+- Print in **matte black** PLA: plain and matte so the O1's scan picks out the white blanks.
+- Calibrate once: tape over the jig, print the template, measure the offset, correct it in xTool Studio.
+- Plate-edge registration clips are coming once the physical plates are measured.
+
+`fusion/o1_jigs.py` generates jigs for any flat rectangular item: add a line to `ITEMS`.
+
+## Printing on a Bambu Lab P1S## Printing on a Bambu Lab P1S
 
 | File | Plates | Time | PLA | Build plate |
 |---|---|---|---|---|
 | `Photo blanks 2R-8R 1mm.gcode.3mf` | 3 | ~3.3 h | ~169 g | Smooth PEI |
 | `Storage trays _ lids.gcode.3mf` | 8 | ~15.5 h | ~831 g | Textured PEI |
-| `Slot test comb.gcode.3mf` | 1 | ~28 min | ~17 g | Textured PEI |
-| `Photo stands 2R-8R.gcode.3mf` | 1 | ~3.9 h | ~223 g | Textured PEI |
+| `Slot test comb.gcode.3mf` / `Slot test comb Rustic.gcode.3mf` | 1 each | ~30 min | ~17 g | Textured PEI |
+| `Photo stands Minimal / Fluted / Rustic 2R-8R.gcode.3mf` | 1 each | ~3.9 / 4.7 / 4.9 h | ~225 g | Textured PEI |
+| `O1 Small jig <size>.gcode.3mf` (2R, 3R, 4R) | 1 each | ~1.2 h | ~55-65 g | Textured PEI, matte black |
+| `O1 Large jig <size>.gcode.3mf` (2R-8R) | 3-4 each | ~3.5-4 h | ~160-205 g | Textured PEI, matte black |
 
 Open the file in Bambu Studio and print plate by plate. For other printers, slice the 3MF models in
 `exports/` with your own profiles.
@@ -86,7 +122,8 @@ connected to Fusion's built-in MCP server.
 - `photo_blanks.py` builds all 11 blanks in the active design. Every dimension is a user parameter.
 - `storage_trays.py` builds every tray and lid in a new document and splits parts that exceed the bed.
 - `place_blanks_in_trays.py` copies the blanks into their trays as a fit check.
-- `photo_stands.py` builds the slot stands and the slot-width test comb in a new document.
+- `photo_stands.py` builds the slot stands (three styles) and the slot-width test combs in a new document.
+- `o1_jigs.py` builds tiled batch jigs for the xTool O1 Omni in a new document.
 
 ## Slicing pipeline and MCP server
 
@@ -140,7 +177,7 @@ it to your phone (Home Assistant Companion app) with the job name and filament w
 
 - Home Assistant as the hub: ESP32 camera and LED status lights, more automations
 - Slack bot: request a design in Slack, approve it, and get a photo back when the print finishes
-- UV printing workflow and jigs for the xTool O1 Omni
+- O1 plate registration clips; jigs for magnets, ornaments, badges, phone cases
 - Automated plate handling
 
 ## License

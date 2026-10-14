@@ -97,6 +97,43 @@ def _rejected_since(st, t0):
     return any((h.get('attr'), h.get('code')) == VERIFY_FAILED and h.get('timestamp', 0) >= t0 - 5 for h in st['errors'])
 
 
+def _ha_status(name='p1s'):
+    """Printer state from Home Assistant (ha-bambulab), which already holds the printer's MQTT connection.
+
+    The P1S misbehaves with several MQTT clients (status reads hang, especially while a job starts),
+    so status comes from HA whenever it is configured.
+    """
+    import urllib.request
+    url, tok, serial = (keyring.get_password(SERVICE, k) for k in ('ha_url', 'ha_token', '%s_serial' % name))
+    if not (url and tok and serial):
+        return None
+    pre = '%s_%s' % (name, serial.lower())
+
+    def get(entity):
+        req = urllib.request.Request('%s/api/states/%s' % (url, entity), headers={'Authorization': 'Bearer ' + tok})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.load(r)
+
+    try:
+        st = {'state': get('sensor.%s_print_status' % pre)['state'].upper(),
+              'percent': get('sensor.%s_print_progress' % pre)['state'],
+              'remaining_min': get('sensor.%s_remaining_time' % pre)['state'],
+              'job': get('sensor.%s_task_name' % pre)['state'],
+              'stage': get('sensor.%s_current_stage' % pre)['state'],
+              'sd_card': get('sensor.%s_sd_card_status' % pre)['state'] == 'normal',
+              'online': get('binary_sensor.%s_online' % pre)['state'] == 'on',
+              'hms_errors': get('binary_sensor.%s_hms_errors' % pre)['state'] == 'on',
+              'errors': [], 'source': 'home assistant'}
+        trays = []
+        for i in range(1, 5):
+            t = get('sensor.%s_ams_1_tray_%d' % (pre, i))
+            trays.append({'slot': str(i - 1), 'type': t['attributes'].get('type'), 'color': (t['attributes'].get('color') or '').lstrip('#').upper()})
+        st['ams'] = [{'unit': '0', 'trays': trays}]
+        return st
+    except Exception:
+        return None
+
+
 def status(name='p1s'):
     d = report(name)
     ams = d.get('ams') or {}
@@ -195,7 +232,7 @@ def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=None, name='p
     if problems:
         raise RuntimeError('plate %d failed checks: %s' % (plate, problems))
 
-    st = status(name)
+    st = _ha_status(name) or status(name)
     if st['state'] in BUSY:
         raise RuntimeError('printer is busy (%s, %s%%)' % (st['state'], st['percent']))
     if use_ams is None:
@@ -236,19 +273,24 @@ def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=None, name='p
         'vibration_cali': True, 'layer_inspect': False,
         'use_ams': bool(use_ams), 'ams_mapping': [ams_slot or 0] if use_ams else []}}, name)
     started = None
-    for _ in range(12):
+    for _ in range(18):
         time.sleep(5)
-        s = status(name)
-        if _rejected_since(s, t0):
-            raise RuntimeError('uploaded %s, but the printer rejected the start command (HMS 0500-0500-0001-0007, '
-                               'command verification failed): turn on Developer Mode on the printer' % remote)
-        if s['state'] in ('PREPARE', 'RUNNING') or (s['job'] and s['job'].startswith(entry['job_id']) and s['state'] != st['state']):
+        s = _ha_status(name)
+        if s is None:  # no Home Assistant: fall back to a direct read
+            try:
+                s = status(name)
+            except (OSError, RuntimeError):
+                continue
+            if _rejected_since(s, t0):
+                raise RuntimeError('uploaded %s, but the printer rejected the start command (HMS 0500-0500-0001-0007, '
+                                   'command verification failed): turn on Developer Mode on the printer' % remote)
+        if s['state'] in ('PREPARE', 'RUNNING') or (s['job'] or '').startswith(entry['job_id']):
             started = s
             break
     bs._journal({'type': 'print', 'job_id': entry['job_id'], 'plate': plate, 'remote_file': remote,
                  'started': bool(started), 'time': datetime.datetime.now().isoformat(timespec='seconds')})
     if not started:
-        raise RuntimeError('uploaded %s but the printer did not start within 60 s; is LAN-only + Developer Mode on?' % remote)
+        raise RuntimeError('uploaded %s but the printer did not start within 90 s; check Developer Mode and HMS errors' % remote)
     plan.update({'started': True, 'printer': started})
     return plan
 

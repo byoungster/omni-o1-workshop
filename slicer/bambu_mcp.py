@@ -134,8 +134,8 @@ def journal(limit: int = 20, recipe: str | None = None) -> list[dict]:
 
 @server.tool()
 def printer_status() -> dict:
-    """Live P1S status over LAN: state, progress, temperatures, light, SD card, AMS, errors."""
-    return bpr.status()
+    """Live P1S status (via Home Assistant when configured, else LAN): state, progress, SD card, AMS, errors."""
+    return bpr._ha_status() or bpr.status()
 
 
 @server.tool()

@@ -69,8 +69,8 @@ SPRING = 'A'                 # spring on the main sled
 TEST_SPRINGS = ('B', 'C')    # extra sleds that fit the same tray, to compare by hand; () for none
 SPRING_SPAN = 20.0    # bar length across the tray (centre line)
 SPRING_H = 1.8
-SPRING_PAD = 1.2
-SPRING_NECK = 1.0
+SPRING_PAD = 2.0      # rigid full-width seat pad at the far end
+HEADER_T = 2.4        # rigid full-width header on the sled front; the spring grows out of it through a U-bend
 SPRING_PRELOAD = 1.0  # spring is drawn 1 mm longer than its seat, so it holds the sled on its stop
 ARM_W, ARM_H = 5.0, 1.4
 KNOB_T, KNOB_W, KNOB_H = 6.0, 14.0, 15.0  # rounded thumb pad outside the right wall: depth, width, height
@@ -280,7 +280,8 @@ def split_seam(ctx, body, cx, cy, W, H, name):
 
 # ---------------------------------------------------------------- parts
 def spring_len(sp):
-    return SPRING_PAD + 2 * SPRING_NECK + (sp['segs'] - 1) * sp['pitch'] + sp['beam']
+    """Sled front to seat: header bend + segs flexible bars + bend into the pad (segs + 1 gaps)."""
+    return (sp['segs'] + 1) * sp['pitch'] - sp['beam'] + SPRING_PAD
 
 
 def side_geometry(w, h, cx, cy, spring=None):
@@ -303,7 +304,7 @@ def side_geometry(w, h, cx, cy, spring=None):
     g['sx_l'] = g['sx_r'] - SPRING_SPAN
     g['y_sf_max'] = g['y_gf'] - SPRING_PRELOAD + max(spring_len(v) for v in SPRINGS.values())
     g['spring_x0'] = min(g['xg'] + SLED_W / 2 - v['pitch'] - v['beam'] - SPRING_SPAN - 0.4 for v in SPRINGS.values())
-    g['y_a0'] = g['y_sf_max'] + ARM_W / 2 + 1.0       # arm socket: same place on every sled variant
+    g['y_a0'] = g['y_sf_max'] + HEADER_T + ARM_W / 2 + 1.0   # arm socket behind the header, same on every variant
     g['ch'] = (g['y_a0'] - ARM_W / 2 - TRAVEL - 0.3, g['y_a0'] + ARM_W / 2)  # arm channel; back end = rest stop
     g['z_gb'] = FLOOR - GROOVE_D                      # groove bottom
     return g
@@ -321,7 +322,7 @@ def side_cuts(ctx, body, w, h, cx, cy):
     cut = adsk.fusion.FeatureOperations.CutFeatureOperation
     x0, x1 = g['xg'] - GROOVE_W / 2, g['xg'] + GROOVE_W / 2
     box(ctx, 'Sled Groove', x0, x1, g['y_gf'], g['y_pb'] + WALL + 1, g['z_gb'], FLOOR, cut, body)
-    box(ctx, 'Spring Pocket', g['spring_x0'], x1, g['y_gf'], g['y_sf_max'] + 0.5, g['z_gb'], FLOOR, cut, body)
+    box(ctx, 'Spring Pocket', g['spring_x0'], x1, g['y_gf'], g['y_sf_max'] + HEADER_T + 0.5, g['z_gb'], FLOOR, cut, body)
     box(ctx, 'Blade Bay', x0, x1, g['y_pb'] - 0.01, g['y_pb'] + WALL + 1, FLOOR - 0.01, FLOOR + BLADE_UP + 0.3, cut, body)
     box(ctx, 'Arm Channel', x1 - 0.01, cx + g['pw'] / 2 + 0.01, g['ch'][0], g['ch'][1], FLOOR - 2.0, FLOOR + 0.01, cut, body)
     box(ctx, 'Arm Window', cx + g['pw'] / 2 - 0.01, cx + g['W'] / 2 + 1, g['ch'][0], g['ch'][1],
@@ -426,27 +427,30 @@ def build_mechanism(ctx, lbl, w, h, cx, cy, spring=None, with_knob=True):
     box(ctx, lbl + ' Blade', xa, xb, g['y_sb'] - BLADE_T, g['y_sb'], g['z_gb'], FLOOR + BLADE_UP, join, sled)
     box(ctx, lbl + ' Arm Socket', xb - 4.0, xb + 0.1, g['y_a0'] - 1.65, g['y_a0'] + 1.65,
         g['z_gb'] + 0.5, g['z_gb'] + SLED_H + 0.1, cut, sled)
-    # meander spring: neck from the sled, bars joined by round U-bends, neck to the seat pad (drawn with preload)
-    seat = g['y_gf'] - SPRING_PRELOAD
-    r = sp['pitch'] / 2
-    y0 = g['y_sf'] - SPRING_NECK
-    pts = [(g['sx_r'], g['y_sf'] + 0.3), (g['sx_r'], y0)]
-    for i in range(sp['segs']):
-        yi = y0 - i * sp['pitch']
-        x_from, x_to = (g['sx_r'], g['sx_l']) if i % 2 == 0 else (g['sx_l'], g['sx_r'])
-        pts.append((x_to, yi))
-        if i < sp['segs'] - 1:                      # semicircle to the next bar, bulging outward
-            side = -1 if x_to == g['sx_l'] else 1
-            for k in range(1, 8):
-                a = math.pi * k / 8
-                pts.append((x_to + side * r * math.sin(a), yi - r + r * math.cos(a)))
-    x_end = pts[-1][0]
-    pts.append((x_end, seat + SPRING_PAD - 0.3))
-    poly = offset_polyline(pts, sp['beam'] / 2) + list(reversed(offset_polyline(pts, -sp['beam'] / 2)))
+    # Meander spring with no thin necks: a rigid full-width header on the sled front, then round U-bends
+    # and flexible bars, ending in a U-bend into a rigid full-width seat pad (drawn with preload).
+    r, b, n = sp['pitch'] / 2, sp['beam'], sp['segs']
+    box(ctx, lbl + ' Spring Header', g['sx_l'], xb, g['y_sf'], g['y_sf'] + HEADER_T, g['z_gb'], g['z_gb'] + SLED_H, join, sled)
+    y0c = g['y_sf'] + b / 2                       # centre line of the header's front edge (virtual bar 0)
+    pts = [(g['sx_l'] + 1.0, y0c), (g['sx_l'], y0c)]   # start inside the header
+    for i in range(n + 1):                        # bend i joins bar i to bar i+1 (bar n+1 = the pad)
+        yi = y0c - i * sp['pitch']
+        x_at = g['sx_l'] if i % 2 == 0 else g['sx_r']
+        side = -1 if x_at == g['sx_l'] else 1
+        for k in range(1, 8):
+            a = math.pi * k / 8
+            pts.append((x_at + side * r * math.sin(a), yi - r + r * math.cos(a)))
+        pts.append((x_at, yi - 2 * r))
+        if i < n:
+            pts.append((g['sx_r'] if x_at == g['sx_l'] else g['sx_l'], yi - 2 * r))
+    pts.append((pts[-1][0] + (1.0 if pts[-1][0] == g['sx_l'] else -1.0), pts[-1][1]))   # end inside the pad
+    poly = offset_polyline(pts, b / 2) + list(reversed(offset_polyline(pts, -b / 2)))
     sk = ctx.sketch(g['z_gb'], lbl + ' Spring')
     polygon(sk, poly)
     ctx.extrude(max(sk.profiles, key=lambda p_: p_.areaProperties().area), SPRING_H, join, lbl + ' Spring', sled)
-    box(ctx, lbl + ' Spring Pad', g['sx_l'], g['sx_r'], seat, seat + SPRING_PAD, g['z_gb'], g['z_gb'] + SPRING_H, join, sled)
+    pad_top = y0c - (n + 1) * sp['pitch'] + b / 2
+    box(ctx, lbl + ' Spring Pad', g['sx_l'] - r - b / 2, g['sx_r'] + r + b / 2, pad_top - SPRING_PAD, pad_top,
+        g['z_gb'], g['z_gb'] + SPRING_H, join, sled)
     if not with_knob:
         return sled, None, g
     # knob: tongue into the sled socket, arm through the wall window, rounded thumb pad with grip bumps

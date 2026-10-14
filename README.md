@@ -65,8 +65,9 @@ Thin sheets bow more as they get bigger, so 1 mm is best suited to the smaller s
 **Side dispenser (prototype, 2R):** `exports/storage_side_dispenser/` adds a sled in a floor groove and a
 rounded knob with low grip bumps on the right side. Slide the knob forward 15 mm and the sled's 0.7 mm blade
 pushes only the bottom blank about 10 mm out of the front slot; a short serpentine spring with round U-bends
-returns it. Three test sleds fit the same tray so you can compare springs by feel: A (11 bars x 0.8 mm, ~1.0%
-bar strain, the main one), B (9 x 0.8 mm, ~1.2%) and C (7 x 1.2 mm, ~2.4%). Bar strain is roughly
+returns it. The spring has no thin necks: it grows out of a rigid full-width header on the sled through a
+U-bend and ends in a U-bend into a rigid seat pad. Three test sleds fit the same tray so you can compare springs
+by feel: A (11 bars x 0.8 mm, ~0.8% bar strain, the main one), B (9 x 0.8 mm, ~1.0%) and C (7 x 1.2 mm, ~1.8%). Bar strain is roughly
 3 x thickness x deflection / length^2, so thin bars and more of them last longer; thick, short springs are
 stiffer but wear sooner. PETG lasts longer than PLA. Checked in CAD for rest fit, the full stroke, and stacking.
 

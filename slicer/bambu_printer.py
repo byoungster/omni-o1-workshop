@@ -74,6 +74,26 @@ def report(name='p1s', timeout=15):
     return got['print']
 
 
+def _publish(payload, name='p1s'):
+    """Send one command to the printer's request topic and wait until it is delivered."""
+    c, ip, serial = _mqtt(name)
+    c.connect(ip, 8883, 30)
+    c.loop_start()
+    try:
+        info = c.publish('device/%s/request' % serial, json.dumps(payload), qos=1)
+        info.wait_for_publish(timeout=10)
+    finally:
+        c.loop_stop()
+        c.disconnect()
+
+
+VERIFY_FAILED = (0x05000500, 0x00010007)  # HMS 0500-0500-0001-0007: command rejected by Authorization Control
+
+
+def _rejected_since(st, t0):
+    return any((h.get('attr'), h.get('code')) == VERIFY_FAILED and h.get('timestamp', 0) >= t0 - 5 for h in st['errors'])
+
+
 def status(name='p1s'):
     d = report(name)
     ams = d.get('ams') or {}
@@ -146,11 +166,12 @@ def _slice_entry(path):
     return None
 
 
-def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=0, name='p1s'):
+def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=None, name='p1s'):
     """Send one plate of a sliced .gcode.3mf to the printer.
 
     Without confirm=True this only returns what would be printed. Refuses files that were not sliced
-    by this pipeline, failed its safety checks, or were sliced for another printer model.
+    by this pipeline, failed its safety checks, or were sliced for another printer model. With no
+    ams_slot given, picks the AMS slot whose colour matches the recipe's "ams_color" (e.g. "FFFFFF").
     """
     path = os.path.abspath(path)
     if not path.endswith('.gcode.3mf') or not os.path.isfile(path):
@@ -176,9 +197,17 @@ def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=0, name='p1s'
         raise RuntimeError('printer is busy (%s, %s%%)' % (st['state'], st['percent']))
     if use_ams is None:
         use_ams = bool(st['ams'])
+    trays = {int(u['unit']) * 4 + int(t['slot']): t for u in st['ams'] for t in u['trays'] if t.get('type')}
+    want = (bs.load_recipe(entry['recipe']).get('ams_color') or '').upper().lstrip('#')
+    if use_ams and ams_slot is None:
+        match = [i for i, t in sorted(trays.items()) if want and (t.get('color') or '').upper().startswith(want)]
+        if want and not match:
+            raise RuntimeError('no AMS slot holds the recipe colour %s; load it or pass ams_slot' % want)
+        ams_slot = match[0] if match else 0
+    tray = trays.get(ams_slot or 0, {})
     plan = {'job_id': entry['job_id'], 'plate': plate, 'objects': plate_info['objects'],
             'minutes': plate_info['minutes'], 'grams': plate_info['grams'],
-            'load_build_plate': PLATE_NAMES.get(entry.get('bed_type'), entry.get('bed_type')), 'filament_source': 'AMS slot %d' % ams_slot if use_ams else 'external spool',
+            'load_build_plate': PLATE_NAMES.get(entry.get('bed_type'), entry.get('bed_type')), 'filament_source': ('AMS slot %d (%s, colour %s)' % (ams_slot, tray.get('type'), tray.get('color'))) if use_ams else 'external spool (%s)' % st['external_spool'],
             'printer_state': st['state'], 'sd_card': st['sd_card']}
     if not confirm:
         plan['next'] = 'Check the build plate and filament, then call again with confirm=True to start.'
@@ -191,16 +220,26 @@ def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=0, name='p1s'
     try:
         with open(path, 'rb') as fh:
             up = p.upload_file(fh, remote)
-        if '226' not in str(up):
-            raise RuntimeError('upload failed: %s' % up)
-        p.start_print(remote, plate, use_ams=use_ams, ams_mapping=[ams_slot], flow_calibration=True)
     finally:
         p.disconnect()
+    if '226' not in str(up):
+        raise RuntimeError('upload failed: %s' % up)
+    t0 = time.time()
+    _publish({'print': {
+        'sequence_id': str(int(t0)), 'command': 'project_file', 'param': 'Metadata/plate_%d.gcode' % plate,
+        'url': 'ftp:///%s' % remote, 'subtask_name': '%s plate %d' % (entry['job_id'], plate),
+        'project_id': '0', 'profile_id': '0', 'task_id': '0', 'subtask_id': '0', 'file': '', 'md5': '',
+        'bed_type': 'auto', 'timelapse': False, 'bed_levelling': True, 'flow_cali': True,
+        'vibration_cali': True, 'layer_inspect': False,
+        'use_ams': bool(use_ams), 'ams_mapping': [ams_slot or 0] if use_ams else []}}, name)
     started = None
-    for _ in range(12):  # Authorization Control silently ignores the command unless Developer Mode is on
+    for _ in range(12):
         time.sleep(5)
         s = status(name)
-        if s['state'] in ('PREPARE', 'RUNNING') or (s['job'] and s['job'] in remote and s['state'] != st['state']):
+        if _rejected_since(s, t0):
+            raise RuntimeError('uploaded %s, but the printer rejected the start command (HMS 0500-0500-0001-0007, '
+                               'command verification failed): turn on Developer Mode on the printer' % remote)
+        if s['state'] in ('PREPARE', 'RUNNING') or (s['job'] and s['job'].startswith(entry['job_id']) and s['state'] != st['state']):
             started = s
             break
     bs._journal({'type': 'print', 'job_id': entry['job_id'], 'plate': plate, 'remote_file': remote,

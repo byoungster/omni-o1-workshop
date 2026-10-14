@@ -111,9 +111,19 @@ Status and camera work while the printer is on Bambu Cloud. Uploading and starti
 needs the printer in **LAN-only mode with Developer Mode on** (Bambu's 2025 authorization firmware), which
 disconnects it from Bambu Cloud and Bambu Handy.
 
+## Home Assistant
+
+`homeassistant/blueprints/` holds automations for the [ha-bambulab](https://github.com/greghesp/ha-bambulab)
+integration that you can import with one click.
+
+**Print finished / failed: phone alert with photo.** Saves a printer camera snapshot to `/config/www` and pushes
+it to your phone (Home Assistant Companion app) with the job name and filament weight.
+
+[![Import blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fbyoungster%2Fomni-o1-workshop%2Fblob%2Fmain%2Fhomeassistant%2Fblueprints%2Fautomation%2Fbambu_print_alert_photo.yaml)
+
 ## Roadmap
 
-- Home Assistant as the hub: printer state, ESP32 camera and LED status lights, automations
+- Home Assistant as the hub: ESP32 camera and LED status lights, more automations
 - Slack bot: request a design in Slack, approve it, and get a photo back when the print finishes
 - UV printing workflow and jigs for the xTool O1 Omni
 - Automated plate handling

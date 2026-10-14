@@ -12,6 +12,8 @@
   "changelog": [
     "2026-10-13  process.bottom_shell_layers: 3 -> 5  (1 mm = 5 layers at 0.2 mm; with the preset's 5 top layers the blank prints fully solid)",
     "2026-10-13  bed_type: High Temp Plate = Bambu smooth PEI plate (flat, smooth photo face)",
-    "2026-10-13  note: preset already uses monotonic bottom surface, 0.15 elephant-foot compensation, no skirt"
-  ]
+    "2026-10-13  note: preset already uses monotonic bottom surface, 0.15 elephant-foot compensation, no skirt",
+    "2026-10-13  ams_color: FFFFFF  (blanks print in white; printer picks the AMS slot holding white)"
+  ],
+  "ams_color": "FFFFFF"
 }

@@ -1,0 +1,105 @@
+blueprint:
+  name: Bambu Lab print finished / failed - phone alert with photo
+  description: >
+    When a Bambu Lab printer (ha-bambulab integration) finishes or fails a print, save a camera
+    snapshot to /config/www and push it to a phone running the Home Assistant Companion app,
+    with the job name and filament weight. Snapshots are kept with a timestamp, and the latest
+    is also saved as <prefix>_last.jpg.
+  domain: automation
+  source_url: https://github.com/byoungster/omni-o1-workshop/blob/main/homeassistant/blueprints/automation/bambu_print_alert_photo.yaml
+  input:
+    print_status:
+      name: Print status sensor
+      description: The printer's "Print status" sensor, e.g. sensor.p1s_<serial>_print_status
+      selector:
+        entity:
+          filter:
+            - integration: bambu_lab
+              domain: sensor
+    camera:
+      name: Printer camera
+      selector:
+        entity:
+          filter:
+            - domain: camera
+    task_name:
+      name: Task name sensor
+      description: e.g. sensor.p1s_<serial>_task_name
+      selector:
+        entity:
+          filter:
+            - integration: bambu_lab
+              domain: sensor
+    print_weight:
+      name: Print weight sensor
+      description: e.g. sensor.p1s_<serial>_print_weight
+      selector:
+        entity:
+          filter:
+            - integration: bambu_lab
+              domain: sensor
+    notify_device:
+      name: Phone
+      description: Device running the Home Assistant Companion app
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+    snapshot_prefix:
+      name: Snapshot file prefix
+      description: Files are saved as /config/www/<prefix>_<timestamp>.jpg (served at /local/...)
+      default: printer
+      selector:
+        text: {}
+    printer_label:
+      name: Printer name in the alert
+      default: Printer
+      selector:
+        text: {}
+
+mode: queued
+
+triggers:
+  - trigger: state
+    entity_id: !input print_status
+    to: finish
+    not_from: [unavailable, unknown]
+    id: finish
+  - trigger: state
+    entity_id: !input print_status
+    to: failed
+    not_from: [unavailable, unknown]
+    id: failed
+
+variables:
+  prefix: !input snapshot_prefix
+  label: !input printer_label
+  task_entity: !input task_name
+  weight_entity: !input print_weight
+
+actions:
+  - variables:
+      stamp: "{{ now().strftime('%Y%m%d-%H%M%S') }}"
+      outcome: "{{ trigger.id if trigger.id is defined else 'test' }}"
+  - action: camera.snapshot
+    target:
+      entity_id: !input camera
+    data:
+      filename: "/config/www/{{ prefix }}_{{ stamp }}.jpg"
+  - action: camera.snapshot
+    target:
+      entity_id: !input camera
+    data:
+      filename: "/config/www/{{ prefix }}_last.jpg"
+  - domain: mobile_app
+    type: notify
+    device_id: !input notify_device
+    title: "{{ label }} {{ {'finish': 'finished', 'failed': 'FAILED', 'test': 'alert test'}[outcome] }}"
+    message: >-
+      {% if outcome == 'test' %}Test alert, no print just finished. Last job: {{ states(task_entity) }}
+      {%- else %}{{ states(task_entity) }} - {{ states(weight_entity) }} g{% endif %}
+    data:
+      image: "/local/{{ prefix }}_{{ stamp }}.jpg"
+      tag: "{{ prefix }}-print"
+      priority: high
+      ttl: 0

@@ -152,7 +152,8 @@ def chamber_light(on: bool) -> bool:
 
 
 @server.tool()
-def print_plate(path: str, plate: int = 1, confirm: bool = False, use_ams: bool | None = None, ams_slot: int = 0) -> dict:
+def print_plate(path: str, plate: int = 1, confirm: bool = False, use_ams: bool | None = None,
+                ams_slot: int | None = None) -> dict:
     """Send one plate of a sliced .gcode.3mf to the P1S.
 
     Call first WITHOUT confirm to get the plan (objects, time, build plate to load). Only call with

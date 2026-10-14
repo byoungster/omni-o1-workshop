@@ -63,7 +63,7 @@ Thin sheets bow more as they get bigger, so 1 mm is best suited to the smaller s
 *Renders show the earlier version without the dispenser slot.*
 
 **Side dispenser (prototype, 2R):** `exports/storage_side_dispenser/` adds a sled in a floor groove and a
-rounded knob with low grip bumps on the right side. Slide the knob forward 15 mm and the sled's 0.7 mm blade
+rounded, bevelled knob on the right side. Slide the knob forward 15 mm and the sled's 0.7 mm blade
 pushes only the bottom blank about 10 mm out of the front slot; a short serpentine spring with round U-bends
 returns it. The spring has no thin necks: it grows out of a rigid full-width header on the sled through a
 U-bend and ends in a U-bend into a rigid seat pad. Three test sleds fit the same tray so you can compare springs
@@ -181,6 +181,10 @@ python -c "import keyring, getpass; [keyring.set_password('omni-o1', 'p1s_' + k,
 Status and camera work while the printer is on Bambu Cloud. Uploading and starting prints from your own code
 needs the printer in **LAN-only mode with Developer Mode on** (Bambu's 2025 authorization firmware), which
 disconnects it from Bambu Cloud and Bambu Handy.
+
+Both a P1S and an X1 Carbon are supported: store credentials under `p1s_*` / `x1c_*`, slice any recipe for either
+printer (`--printer x1c`, which swaps in that printer's machine and filament presets), and pass `printer=` to the
+print and status tools. A file sliced for one printer model is refused by the other.
 
 ## Home Assistant
 

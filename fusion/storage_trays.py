@@ -77,6 +77,7 @@ KNOB_T, KNOB_W, KNOB_H = 6.0, 14.0, 15.0  # rounded thumb pad outside the right 
 KNOB_BEVEL = 1.5      # outer edge bevel
 KNOB_BUMP_R, KNOB_BUMP_H, KNOB_BUMP_P = 1.1, 0.4, 3.2  # low rounded grip bumps: base radius, height, spacing (3 x 3)
 KNOB_BUMP_TAPER = -15  # gentle sides
+KNOB_BUMPS = False    # plain rounded pad (user: the knob shape gives enough grip)
 
 CHAMF = RIM + FIT                     # foot inset; 45 deg transition height
 if DISPENSER == 'side':
@@ -355,7 +356,7 @@ def rounded_rect_pts(yc, z0, wy, hz, r_top, r_bot, n=8):
 
 
 def build_knob_pad(ctx, lbl, knob, kx, yc):
-    """Rounded thumb pad (flat bottom for printing), bevelled outer edge and a 3 x 3 grid of grip bumps."""
+    """Rounded thumb pad (flat bottom for printing) with a bevelled outer edge; optional 3 x 3 grip bumps."""
     join = adsk.fusion.FeatureOperations.JoinFeatureOperation
     pl = yz_plane(ctx, kx)
     sk = ctx.root.sketches.add(pl)
@@ -394,6 +395,8 @@ def build_knob_pad(ctx, lbl, knob, kx, yc):
     skb = ctx.root.sketches.add(face)
     skb.isVisible = False
     outward(skb.profiles.item(0), KNOB_BEVEL, -40, lbl + ' Knob Bevel')
+    if not KNOB_BUMPS:
+        return
     # grip bumps on the outer face
     face = max((f for f in knob.faces if f.geometry.surfaceType == adsk.core.SurfaceTypes.PlaneSurfaceType
                 and f.evaluator.getNormalAtPoint(f.pointOnFace)[1].x > 0.99), key=lambda f: f.pointOnFace.x)

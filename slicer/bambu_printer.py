@@ -192,8 +192,41 @@ def _api(name='p1s', camera=False):
     return p
 
 
+def _ha_snapshot(path, name, light):
+    """Camera frame through Home Assistant (works for the X1C's RTSP stream and the P1S)."""
+    import urllib.request
+    url, tok, serial = (keyring.get_password(SERVICE, k) for k in ('ha_url', 'ha_token', '%s_serial' % name))
+    if not (url and tok and serial):
+        return None
+    pre = '%s_%s' % (name, serial.lower())
+    hdr = {'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json'}
+    if light:
+        try:
+            req = urllib.request.Request(url + '/api/services/light/turn_on', method='POST', headers=hdr,
+                                         data=json.dumps({'entity_id': 'light.%s_chamber_light' % pre}).encode())
+            urllib.request.urlopen(req, timeout=10).read()
+            time.sleep(1.5)
+        except Exception:
+            pass
+    try:
+        req = urllib.request.Request(url + '/api/camera_proxy/camera.%s_camera' % pre, headers=hdr)
+        data = urllib.request.urlopen(req, timeout=30).read()
+    except Exception:
+        return None
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with open(path, 'wb') as f:
+        f.write(data)
+    return {'path': os.path.abspath(path), 'bytes': len(data), 'source': 'home assistant'}
+
+
 def snapshot(path, name='p1s', light=True):
-    """Save a camera frame (P1S: 1280x720 JPEG). Turns the chamber light on first if asked."""
+    """Save a camera frame, through Home Assistant when possible. The P1S also has a direct fallback
+    (1280x720 JPEG); the X1C streams RTSP, which needs LAN Only Liveview turned on at the printer."""
+    got = _ha_snapshot(path, name, light)
+    if got:
+        return got
+    if name != 'p1s':
+        raise RuntimeError('no camera frame from Home Assistant for %s; turn on LAN Only Liveview on the printer' % name)
     p = _api(name, camera=True)
     try:
         if light:
@@ -254,8 +287,11 @@ def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=None, name='p
     if not plate_info:
         raise ValueError('plate %d not in job (plates: %s)' % (plate, [p['plate'] for p in entry['plates']]))
     model = bp.resolve('machine', entry['presets']['machine'])['printer_model']
+    target = bp.resolve('machine', bs.PRINTERS[name])['printer_model']
+    if model != target:
+        raise RuntimeError('this file was sliced for the %s, not the %s; re-slice it with printer=%r' % (model, target, name))
     gcode = zipfile.ZipFile(path).read('Metadata/plate_%d.gcode' % plate).decode('utf-8', 'replace')
-    problems = bs._check_plate(gcode, model)
+    problems = bs._check_plate(gcode, model, entry['presets']['machine'])
     if problems:
         raise RuntimeError('plate %d failed checks: %s' % (plate, problems))
 

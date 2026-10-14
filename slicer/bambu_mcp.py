@@ -103,14 +103,15 @@ def list_presets(category: str, contains: str = '') -> list[str]:
 
 
 @server.tool()
-def slice(recipe: str, models: list[str], job: str | None = None, bed_type: str | None = None) -> dict:
+def slice(recipe: str, models: list[str], job: str | None = None, bed_type: str | None = None,
+          printer: str | None = None) -> dict:
     """Slice 3MF/STL files (paths or globs) with a recipe. Auto-arranges across as many plates as needed.
 
     Returns per-plate time, filament, objects, thumbnail path and safety problems. The .gcode.3mf can be
     opened in Bambu Studio (open_in_bambu_studio) to print. bed_type overrides the recipe's plate for this
     job (Cool Plate, Engineering Plate, High Temp Plate = smooth PEI, Textured PEI Plate, Supertack Plate).
     """
-    return bs.slice_models(recipe, models, job, bed_type=bed_type)
+    return bs.slice_models(recipe, models, job, bed_type=bed_type, printer=printer)
 
 
 @server.tool()
@@ -134,27 +135,27 @@ def journal(limit: int = 20, recipe: str | None = None) -> list[dict]:
 
 
 @server.tool()
-def printer_status() -> dict:
-    """Live P1S status (via Home Assistant when configured, else LAN): state, progress, SD card, AMS, errors."""
-    return bpr._ha_status() or bpr.status()
+def printer_status(printer: str = 'p1s') -> dict:
+    """Live status of 'p1s' or 'x1c' (via Home Assistant when configured, else LAN): state, progress, SD card, AMS, errors."""
+    return bpr._ha_status(printer) or bpr.status(printer)
 
 
 @server.tool()
-def camera_snapshot(path: str | None = None, light_on: bool = True) -> dict:
+def camera_snapshot(path: str | None = None, light_on: bool = True, printer: str = 'p1s') -> dict:
     """Save a P1S camera frame (1280x720 JPEG) and return its path. Turns the chamber light on by default."""
-    path = path or os.path.join(bs.OUT, '..', 'snapshots', 'p1s %s.jpg' % datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
-    return bpr.snapshot(os.path.abspath(path), light=light_on)
+    path = path or os.path.join(bs.OUT, '..', 'snapshots', '%s %s.jpg' % (printer, datetime.datetime.now().strftime('%Y%m%d-%H%M%S')))
+    return bpr.snapshot(os.path.abspath(path), name=printer, light=light_on)
 
 
 @server.tool()
-def chamber_light(on: bool) -> bool:
+def chamber_light(on: bool, printer: str = 'p1s') -> bool:
     """Turn the P1S chamber light on or off."""
-    return bpr.light(on)
+    return bpr.light(on, printer)
 
 
 @server.tool()
 def print_plate(path: str, plate: int = 1, confirm: bool = False, use_ams: bool | None = None,
-                ams_slot: int | None = None, color: str | None = None) -> dict:
+                ams_slot: int | None = None, color: str | None = None, printer: str = 'p1s') -> dict:
     """Send one plate of a sliced .gcode.3mf to the P1S.
 
     Call first WITHOUT confirm to get the plan (objects, time, build plate to load). Only call with
@@ -162,15 +163,15 @@ def print_plate(path: str, plate: int = 1, confirm: bool = False, use_ams: bool 
     that passed its safety checks are accepted. Needs LAN-only + Developer Mode on the printer.
     color (hex, e.g. "000000") picks the AMS slot holding that colour; default is the recipe's ams_color.
     """
-    return bpr.print_job(path, plate, confirm, use_ams, ams_slot, color=color)
+    return bpr.print_job(path, plate, confirm, use_ams, ams_slot, name=printer, color=color)
 
 
 @server.tool()
-def print_control(action: str) -> bool:
+def print_control(action: str, printer: str = 'p1s') -> bool:
     """pause, resume or stop the current print. Only use when the user asks."""
     if action not in ('pause', 'resume', 'stop'):
         raise ValueError('action must be pause, resume or stop')
-    return bpr.control(action)
+    return bpr.control(action, printer)
 
 
 if __name__ == '__main__':

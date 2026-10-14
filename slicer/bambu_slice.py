@@ -5,7 +5,7 @@ settings on top of them. Changing a setting is a one-line, dated, diffable edit,
 and every print outcome is appended to journal.jsonl, so settings can be tuned against results.
 
 Usage:
-  python bambu_slice.py slice <recipe> <model.3mf|glob> [...] [--job NAME] [--bed "High Temp Plate"]
+  python bambu_slice.py slice <recipe> <model.3mf|glob> [...] [--job NAME] [--bed "High Temp Plate"] [--printer x1c]
   python bambu_slice.py set <recipe> <machine|process|filament> <key> <value> "<reason>"
   python bambu_slice.py result <job_id> <ok|warped|failed|...> "<notes>"
 """
@@ -29,6 +29,27 @@ JOURNAL = os.path.join(HERE, 'journal.jsonl')
 CATALOG = os.path.join(HERE, 'settings_catalog.json')  # every key the slicer knows, from the last slice
 OUT = os.path.join(os.path.dirname(HERE), 'exports', 'sliced')
 BED_TYPES = ('Cool Plate', 'Engineering Plate', 'High Temp Plate', 'Textured PEI Plate', 'Supertack Plate')
+PRINTERS = {'p1s': 'Bambu Lab P1S 0.4 nozzle', 'x1c': 'Bambu Lab X1 Carbon 0.4 nozzle'}
+FILAMENT_TAGS = {'p1s': ('P1S 0.4 nozzle', 'P1S', 'X1C'), 'x1c': ('X1C', 'X1C 0.4 nozzle')}
+
+
+def for_printer(r, printer):
+    """Recipe retargeted to another printer: its machine preset and the matching filament preset."""
+    if printer not in PRINTERS:
+        raise ValueError('printer must be one of %s' % sorted(PRINTERS))
+    r = dict(r)
+    if r['machine'] == PRINTERS[printer]:
+        return r
+    r['machine'] = PRINTERS[printer]
+    base = r['filament'].split(' @BBL ')[0]
+    known = set(bp.presets('filament', base))
+    for tag in FILAMENT_TAGS[printer]:
+        if '%s @BBL %s' % (base, tag) in known:
+            r['filament'] = '%s @BBL %s' % (base, tag)
+            break
+    else:
+        raise KeyError('no %s filament preset for %s' % (base, printer))
+    return r
 
 
 # ---------------------------------------------------------------- recipes
@@ -121,11 +142,18 @@ def _resolve_models(models):
     return paths
 
 
-def _check_plate(gcode, printer_model):
+def start_marker(machine):
+    """The '===== machine: ...' header of a machine preset's start G-code (e.g. 'P1S-0.4', 'X1-0.4')."""
+    first = (bp.resolve('machine', machine).get('machine_start_gcode') or '').splitlines()[:1]
+    m = re.match(r'^;=+ *machine: *([^=]+?) *=*\s*$', first[0]) if first else None
+    return m.group(1) if m else None
+
+
+def _check_plate(gcode, printer_model, machine):
     """Safety checks a sliced plate must pass before it is allowed near the printer."""
     problems = []
-    short = printer_model.replace('Bambu Lab ', '')
-    if ('machine: %s' % short) not in gcode:
+    marker = start_marker(machine)
+    if not marker or not re.search(r'^;=+ *machine: *%s *=*' % re.escape(marker), gcode, re.M):
         problems.append('%s start G-code missing' % printer_model)
     if not re.search(r'^; printer_model = %s\s*$' % re.escape(printer_model), gcode, re.M):
         problems.append('G-code was not sliced for %s' % printer_model)
@@ -134,9 +162,12 @@ def _check_plate(gcode, printer_model):
     return problems
 
 
-def slice_models(recipe, models, job=None, arrange=True, bed_type=None):
-    """bed_type overrides the recipe's plate for this job (e.g. whatever plate is loaded right now)."""
+def slice_models(recipe, models, job=None, arrange=True, bed_type=None, printer=None):
+    """bed_type overrides the recipe's plate for this job (e.g. whatever plate is loaded right now);
+    printer ('p1s', 'x1c') retargets the recipe to that printer's machine and filament presets."""
     r = load_recipe(recipe)
+    if printer:
+        r = for_printer(r, printer)
     if bed_type:
         if bed_type not in BED_TYPES:
             raise ValueError('bed_type must be one of %s' % (BED_TYPES,))
@@ -186,7 +217,7 @@ def slice_models(recipe, models, job=None, arrange=True, bed_type=None):
         meta = dict(re.findall(r'<metadata key="([^"]+)" value="([^"]*)"', block))
         idx = int(meta['index'])
         gcode = z.read('Metadata/plate_%d.gcode' % idx).decode('utf-8', 'replace')
-        problems = _check_plate(gcode, printer_model)
+        problems = _check_plate(gcode, printer_model, r['machine'])
         if meta.get('outside') == 'true':
             problems.append('object outside the printable area')
         thumb = os.path.join(OUT, '%s plate %d.png' % (job, idx))
@@ -202,6 +233,7 @@ def slice_models(recipe, models, job=None, arrange=True, bed_type=None):
         'type': 'slice', 'job_id': job, 'time': datetime.datetime.now().isoformat(timespec='seconds'),
         'recipe': recipe, 'recipe_sha': hashlib.sha1(json.dumps(r, sort_keys=True).encode()).hexdigest()[:10],
         'presets': {c: r[c] for c in bp.CATEGORIES}, 'bed_type': r.get('bed_type'), 'overrides': ov,
+        'printer': next((k for k, v in PRINTERS.items() if v == r['machine']), None),
         'models': [os.path.basename(m) for m in models], 'output': out,
         'plates': [{k: p[k] for k in ('plate', 'minutes', 'grams', 'objects')} for p in plates],
         'total_minutes': round(sum(p['minutes'] for p in plates), 1),
@@ -247,8 +279,9 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if a and a[0] == 'slice':
         opt = lambda k: a[a.index(k) + 1] if k in a else None
-        models = [x for i, x in enumerate(a[2:], 2) if x not in ('--job', '--bed') and a[i - 1] not in ('--job', '--bed')]
-        e = slice_models(a[1], models, opt('--job'), bed_type=opt('--bed'))
+        flags = ('--job', '--bed', '--printer')
+        models = [x for i, x in enumerate(a[2:], 2) if x not in flags and a[i - 1] not in flags]
+        e = slice_models(a[1], models, opt('--job'), bed_type=opt('--bed'), printer=opt('--printer'))
         print(json.dumps({k: e[k] for k in ('job_id', 'output', 'total_minutes', 'total_grams', 'safe_to_print', 'problems')}, indent=1))
         for p in e['plates']:
             print('  plate %d: %6.1f min %6.1f g  %s%s' % (p['plate'], p['minutes'], p['grams'], ', '.join(p['objects']),

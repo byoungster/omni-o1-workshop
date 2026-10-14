@@ -151,10 +151,14 @@ def _ha_status(name='p1s'):
               'hms_errors': get('binary_sensor.%s_hms_errors' % pre)['state'] == 'on',
               'errors': [], 'source': 'home assistant'}
         trays = []
-        for i in range(1, 5):
-            t = get('sensor.%s_ams_1_tray_%d' % (pre, i))
-            trays.append({'slot': str(i - 1), 'type': t['attributes'].get('type'), 'color': (t['attributes'].get('color') or '').lstrip('#').upper()})
-        st['ams'] = [{'unit': '0', 'trays': trays}]
+        for i in range(1, 5):                     # best effort: HA drops AMS entities until the printer re-reports them
+            try:
+                t = get('sensor.%s_ams_1_tray_%d' % (pre, i))
+            except Exception:
+                continue
+            trays.append({'slot': str(i - 1), 'type': t['attributes'].get('type'),
+                          'color': (t['attributes'].get('color') or '').lstrip('#').upper()})
+        st['ams'] = [{'unit': '0', 'trays': trays}] if trays else []
         return st
     except Exception:
         return None
@@ -296,6 +300,11 @@ def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=None, name='p
         raise RuntimeError('plate %d failed checks: %s' % (plate, problems))
 
     st = _ha_status(name) or status(name)
+    if not st.get('ams'):                         # HA had no AMS data: read the trays straight from the printer
+        try:
+            st['ams'] = status(name)['ams']
+        except (OSError, RuntimeError):
+            pass
     if st['state'] in BUSY:
         raise RuntimeError('printer is busy (%s, %s%%)' % (st['state'], st['percent']))
     if use_ams is None:

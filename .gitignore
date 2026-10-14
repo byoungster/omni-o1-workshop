@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.secret*
+
+# Local state: contains machine-specific paths
+slicer/journal.jsonl
+slicer/settings_catalog.json
+exports/snapshots/
+
+# Private planning material
+research_notes/
+reports/

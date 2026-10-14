@@ -6,11 +6,13 @@ versioned settings, and LAN control of a Bambu Lab P1S.
 
 ![Photo blanks 2R to 12R](docs/images/photo-blanks.png)
 
+*Renders show the earlier labeled version; current blanks are plain.*
+
 ## What's in the repo
 
 | Folder | Contents |
 |---|---|
-| `exports/blanks_1mm/` | 3MF models of the 11 standard photo sizes, 1 mm thick, size label debossed 0.2 mm |
+| `exports/blanks_1mm/` | 3MF models of the 11 standard photo sizes, plain 1 mm (no label) |
 | `exports/storage_trays/` | 3MF models of stackable trays and lids (20 blanks each) for 2R to 8R |
 | `exports/photo_stands/` | 3MF models of 15° slot stands in three styles (Minimal, Fluted, Rustic), plus slot-width test combs |
 | `exports/o1_jigs/` | 3MF tiles of batch jigs for the xTool O1 Omni flat bed (small 330×122 and large 330×420 plates) |
@@ -21,10 +23,11 @@ versioned settings, and LAN control of a Bambu Lab P1S.
 
 ## Photo blanks
 
-All sizes are 1 mm thick with the size name debossed 0.2 mm (one layer at 0.2 mm), which leaves 0.8 mm of solid material
-under the label so it doesn't show through the photo face.
-Print them **label side up on a smooth PEI plate**. The face against the plate comes out flat and smooth, and
-that is the face you UV print the photo onto. The label ends up on the back.
+All sizes are plain 1 mm slabs. There is no label: the storage trays carry the size, and a plain blank
+diffuses light evenly (a debossed label thins the blank and shows through). Set `LABELS = True` in
+`fusion/photo_blanks.py` to deboss the size name again.
+Print them **on a smooth PEI plate**. The face against the plate comes out flat and smooth, and that is the face
+you UV print the photo onto.
 
 | Size | mm | inches | Fits a 256 mm bed (A1, P1S, P2S, X1C) |
 |---|---|---|---|
@@ -103,7 +106,7 @@ its product page calls them standard and large. By size:
 
 | File | Plates | Time | PLA | Build plate |
 |---|---|---|---|---|
-| `Photo blanks 2R-8R 1mm.gcode.3mf` | 3 | ~3.3 h | ~169 g | Smooth PEI |
+| `Photo blanks 2R-8R 1mm.gcode.3mf` | 3 | ~3.2 h | ~170 g | Smooth PEI |
 | `Storage trays _ lids.gcode.3mf` | 8 | ~15.5 h | ~831 g | Textured PEI |
 | `Slot test comb.gcode.3mf` / `Slot test comb Rustic.gcode.3mf` | 1 each | ~30 min | ~17 g | Textured PEI |
 | `Photo stands Minimal / Fluted / Rustic 2R-8R.gcode.3mf` | 1 each | ~3.9 / 4.7 / 4.9 h | ~225 g | Textured PEI |

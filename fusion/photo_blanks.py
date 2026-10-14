@@ -1,9 +1,11 @@
-"""Standard photo-size blanks with a debossed size label (Autodesk Fusion API script).
+"""Standard photo-size blanks (Autodesk Fusion API script).
 
 Builds all 11 sizes (2R-12R) as bodies in the active design, side by side. Everything is driven by
-user parameters (Modify > Change Parameters): card_t, deboss_d, label_h and <size>_w / <size>_h.
-The label is debossed into the top face; print that face up so the bed side (smooth PEI) is the
-clean face for UV printing. Run from Fusion's Scripts dialog or an MCP script runner.
+user parameters (Modify > Change Parameters): card_t and <size>_w / <size>_h.
+Blanks are plain by default: the storage trays carry the size, and a debossed label thins the blank
+so light shows through it. Set LABELS = True to deboss the size name into the top face again.
+Print with the smooth PEI plate underneath; the bed side is the clean face for UV printing.
+Run from Fusion's Scripts dialog or an MCP script runner.
 """
 import adsk.core, adsk.fusion
 
@@ -12,6 +14,7 @@ P3 = adsk.core.Point3D
 MM = 0.1  # Fusion API lengths are cm
 
 CARD_T = '1 mm'       # blank thickness
+LABELS = False        # plain blanks diffuse light evenly; True debosses the size name
 DEBOSS_D = '0.2 mm'   # label depth (1 layer at 0.2 mm; deeper labels can show through the photo face)
 LABEL_H = '30 mm'     # default label height
 
@@ -47,19 +50,21 @@ def run(_context: str):
             up.add(name, VI.createByString(expr), 'mm', comment)
 
     param('card_t', CARD_T, 'Blank thickness (all sizes)')
-    param('deboss_d', DEBOSS_D, 'Label deboss depth')
-    param('label_h', LABEL_H, 'Label text height (default)')
+    if LABELS:
+        param('deboss_d', DEBOSS_D, 'Label deboss depth')
+        param('label_h', LABEL_H, 'Label text height (default)')
     for lbl, pre, w, h, lh, desc in SIZES:
         param(pre + '_w', '%d mm' % w, desc + ' width')
         param(pre + '_h', '%d mm' % h, desc + ' height')
-        if lh:
+        if lh and LABELS:
             param(pre + '_label_h', lh, lbl + ' label height (narrow blank)')
 
-    pin = root.constructionPlanes.createInput()
-    pin.setByOffset(root.xYConstructionPlane, VI.createByString('card_t'))
-    top = root.constructionPlanes.add(pin)
-    top.name = 'Top Face'
-    top.isLightBulbOn = False
+    if LABELS:
+        pin = root.constructionPlanes.createInput()
+        pin.setByOffset(root.xYConstructionPlane, VI.createByString('card_t'))
+        top = root.constructionPlanes.add(pin)
+        top.name = 'Top Face'
+        top.isLightBulbOn = False
 
     extrudes = root.features.extrudeFeatures
     x = 0.0
@@ -104,6 +109,8 @@ def run(_context: str):
         body = ext.bodies.item(0)
         body.name = lbl + ' Blank'
 
+        if not LABELS:
+            continue
         # Size label, centred, debossed into the top face
         sk2 = root.sketches.add(top)
         sk2.name = lbl + ' Label'

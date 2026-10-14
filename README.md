@@ -63,11 +63,12 @@ Thin sheets bow more as they get bigger, so 1 mm is best suited to the smaller s
 *Renders show the earlier version without the dispenser slot.*
 
 **Side dispenser (prototype, 2R):** `exports/storage_side_dispenser/` adds a sled in a floor groove and a
-rounded knob with grip bumps on the right side. Slide the knob forward 15 mm and the sled's 0.7 mm blade pushes
-only the bottom blank about 10 mm out of the front slot. A short serpentine spring with round U-bends (sharp
-corners crack printed springs) returns it; each bar bends about 1.2%, and PETG lasts longer than PLA. Three
-printed parts: tray, sled with spring, knob (the knob's arm goes in through the wall window and plugs into the
-sled). Checked in CAD for rest fit, the full stroke, and stacking.
+rounded knob with low grip bumps on the right side. Slide the knob forward 15 mm and the sled's 0.7 mm blade
+pushes only the bottom blank about 10 mm out of the front slot; a short serpentine spring with round U-bends
+returns it. Three test sleds fit the same tray so you can compare springs by feel: A (11 bars x 0.8 mm, ~1.0%
+bar strain, the main one), B (9 x 0.8 mm, ~1.2%) and C (7 x 1.2 mm, ~2.4%). Bar strain is roughly
+3 x thickness x deflection / length^2, so thin bars and more of them last longer; thick, short springs are
+stiffer but wear sooner. PETG lasts longer than PLA. Checked in CAD for rest fit, the full stroke, and stacking.
 
 ![Front of a tray with stock ticks](docs/images/tray-front-stock-ticks.png)
 
@@ -121,7 +122,7 @@ its product page calls them standard and large. By size:
 | `Photo blanks 2R-8R 1mm.gcode.3mf` | 3 | ~3.2 h | ~170 g | Smooth PEI |
 | `Storage trays _ lids.gcode.3mf` | 9 | ~18.4 h | ~958 g | Textured PEI |
 | `Dispenser 2R tray smooth PEI.gcode.3mf` (rear push) | 1 | ~49 min | ~36 g | Smooth PEI |
-| `Side dispenser 2R prototype.gcode.3mf` (tray + sled + knob) | 1 | ~57 min | ~42 g | Smooth PEI |
+| `Side dispenser 2R prototype.gcode.3mf` (tray, sleds A/B/C, knob) | 1 | ~65 min | ~45 g | Smooth PEI |
 | `Slot test comb.gcode.3mf` / `Slot test comb Rustic.gcode.3mf` | 1 each | ~30 min | ~17 g | Textured PEI |
 | `Photo stands Minimal / Fluted / Rustic 2R-8R.gcode.3mf` | 1 each | ~3.9 / 4.7 / 4.9 h | ~225 g | Textured PEI |
 | `O1 Small jig <size>.gcode.3mf` (2R, 3R, 4R) | 1 each | ~1.2 h | ~55-65 g | Textured PEI, matte black |

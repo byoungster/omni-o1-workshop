@@ -13,3 +13,6 @@ exports/snapshots/
 # Private planning material
 research_notes/
 reports/
+
+# Browser automation logs
+.playwright-mcp/

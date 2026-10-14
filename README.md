@@ -10,8 +10,9 @@ versioned settings, and LAN control of a Bambu Lab P1S.
 
 | Folder | Contents |
 |---|---|
-| `exports/blanks_1mm/` | 3MF models of the 11 standard photo sizes, 1 mm thick, size label debossed 0.4 mm |
+| `exports/blanks_1mm/` | 3MF models of the 11 standard photo sizes, 1 mm thick, size label debossed 0.2 mm |
 | `exports/storage_trays/` | 3MF models of stackable trays and lids (20 blanks each) for 2R to 8R |
+| `exports/photo_stands/` | 3MF models of 15° slot stands for the plaques, plus a slot-width test comb |
 | `exports/sliced/` | Print-ready `.gcode.3mf` files for a Bambu Lab P1S (0.4 nozzle), with plate previews |
 | `fusion/` | Fusion API scripts that generate the blanks and trays from parameters |
 | `slicer/` | Bambu Studio CLI pipeline, slicing recipes, P1S LAN control, and an MCP server for Claude |
@@ -19,7 +20,8 @@ versioned settings, and LAN control of a Bambu Lab P1S.
 
 ## Photo blanks
 
-All sizes are 1 mm thick with the size name debossed 0.4 mm (two layers at 0.2 mm), which leaves a 0.6 mm floor.
+All sizes are 1 mm thick with the size name debossed 0.2 mm (one layer at 0.2 mm), which leaves 0.8 mm of solid material
+under the label so it doesn't show through the photo face.
 Print them **label side up on a smooth PEI plate**. The face against the plate comes out flat and smooth, and
 that is the face you UV print the photo onto. The label ends up on the back.
 
@@ -53,12 +55,24 @@ Thin sheets bow more as they get bigger, so 1 mm is best suited to the smaller s
 
 ![Front of a tray with stock ticks](docs/images/tray-front-stock-ticks.png)
 
+## Photo stands
+
+![Slot stands and test comb](docs/images/photo-stands.png)
+
+- A 15° slot holds the plaque by its bottom edge. Bases reach about 15% of the plaque height behind the slot so
+  tall plaques don't tip. Each stand is labeled in inches on the back (2.5x3.5 up to 8x10).
+- **Print the test comb first.** It has slots from 1.2 to 1.6 mm. Find the one that holds your printed blank
+  snugly and set `SLOT_W` in `fusion/photo_stands.py` (default 1.4 mm).
+- Print upright as exported, no supports. Matte PLA hides layer lines.
+
 ## Printing on a Bambu Lab P1S
 
 | File | Plates | Time | PLA | Build plate |
 |---|---|---|---|---|
-| `Photo blanks 2R-8R 1mm.gcode.3mf` | 3 | ~3.3 h | ~167 g | Smooth PEI |
+| `Photo blanks 2R-8R 1mm.gcode.3mf` | 3 | ~3.3 h | ~169 g | Smooth PEI |
 | `Storage trays _ lids.gcode.3mf` | 8 | ~15.5 h | ~831 g | Textured PEI |
+| `Slot test comb.gcode.3mf` | 1 | ~28 min | ~17 g | Textured PEI |
+| `Photo stands 2R-8R.gcode.3mf` | 1 | ~3.9 h | ~223 g | Textured PEI |
 
 Open the file in Bambu Studio and print plate by plate. For other printers, slice the 3MF models in
 `exports/` with your own profiles.
@@ -72,6 +86,7 @@ connected to Fusion's built-in MCP server.
 - `photo_blanks.py` builds all 11 blanks in the active design. Every dimension is a user parameter.
 - `storage_trays.py` builds every tray and lid in a new document and splits parts that exceed the bed.
 - `place_blanks_in_trays.py` copies the blanks into their trays as a fit check.
+- `photo_stands.py` builds the slot stands and the slot-width test comb in a new document.
 
 ## Slicing pipeline and MCP server
 

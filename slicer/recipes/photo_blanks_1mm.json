@@ -1,5 +1,5 @@
 {
-  "description": "1 mm photo blanks for UV printing. Photo face prints against smooth PEI; debossed label faces up (becomes the back).",
+  "description": "1 mm photo blanks for UV printing. Photo face prints against smooth PEI; 0.2 mm debossed label faces up (becomes the back).",
   "machine": "Bambu Lab P1S 0.4 nozzle",
   "process": "0.20mm Standard @BBL X1C",
   "filament": "Bambu PLA Basic @BBL P1S 0.4 nozzle",
@@ -13,7 +13,8 @@
     "2026-10-13  process.bottom_shell_layers: 3 -> 5  (1 mm = 5 layers at 0.2 mm; with the preset's 5 top layers the blank prints fully solid)",
     "2026-10-13  bed_type: High Temp Plate = Bambu smooth PEI plate (flat, smooth photo face)",
     "2026-10-13  note: preset already uses monotonic bottom surface, 0.15 elephant-foot compensation, no skirt",
-    "2026-10-13  ams_color: FFFFFF  (blanks print in white; printer picks the AMS slot holding white)"
+    "2026-10-13  ams_color: FFFFFF  (blanks print in white; printer picks the AMS slot holding white)",
+    "2026-10-13  model: label deboss 0.4 -> 0.2 mm (one layer; first test print's label was deeper than wanted). Keep layer_height 0.2 so the label is exactly the top layer."
   ],
   "ams_color": "FFFFFF"
 }

@@ -12,7 +12,7 @@ P3 = adsk.core.Point3D
 MM = 0.1  # Fusion API lengths are cm
 
 CARD_T = '1 mm'       # blank thickness
-DEBOSS_D = '0.4 mm'   # label depth (2 layers at 0.2 mm)
+DEBOSS_D = '0.2 mm'   # label depth (1 layer at 0.2 mm; deeper labels can show through the photo face)
 LABEL_H = '30 mm'     # default label height
 
 # label, parameter prefix, width mm, height mm, label height (expr or None for LABEL_H), description

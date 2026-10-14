@@ -8,6 +8,7 @@ import datetime
 import json
 import os
 import re
+import socket
 import ssl
 import time
 import zipfile
@@ -19,6 +20,7 @@ import bambu_profiles as bp
 import bambu_slice as bs
 
 SERVICE = 'omni-o1'
+socket.setdefaulttimeout(20)  # a P1S with too many clients can accept TCP and then stall forever
 BUSY = {'RUNNING', 'PREPARE', 'PAUSE', 'SLICING'}
 PLATE_NAMES = {'High Temp Plate': 'Smooth PEI (High Temp Plate)', 'Textured PEI Plate': 'Textured PEI',
                'Cool Plate': 'Cool Plate', 'Engineering Plate': 'Engineering Plate', 'Supertack Plate': 'Cool Plate SuperTack'}
@@ -39,6 +41,7 @@ def _mqtt(name='p1s'):
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE  # the printer presents a self-signed certificate
     c.tls_set_context(ctx)
+    c.connect_timeout = 10
     return c, ip, serial
 
 

@@ -62,6 +62,12 @@ Thin sheets bow more as they get bigger, so 1 mm is best suited to the smaller s
 
 *Renders show the earlier version without the dispenser slot.*
 
+**Side dispenser (prototype, 2R):** `exports/storage_side_dispenser/` adds a sled with a printed zigzag
+spring in a floor groove, and a knob on the right side. Slide the knob forward about 21 mm and the sled's
+0.7 mm blade pushes only the bottom blank out of the front slot; the spring returns it. Three printed parts:
+tray, sled, knob (the knob's arm goes in through the wall window and plugs into the sled). Checked in CAD for
+rest fit, the full stroke, and stacking. Print the sled in PETG if the PLA spring tires.
+
 ![Front of a tray with stock ticks](docs/images/tray-front-stock-ticks.png)
 
 ## Photo stands
@@ -113,7 +119,8 @@ its product page calls them standard and large. By size:
 |---|---|---|---|---|
 | `Photo blanks 2R-8R 1mm.gcode.3mf` | 3 | ~3.2 h | ~170 g | Smooth PEI |
 | `Storage trays _ lids.gcode.3mf` | 9 | ~18.4 h | ~958 g | Textured PEI |
-| `Dispenser 2R tray smooth PEI.gcode.3mf` (prototype) | 1 | ~49 min | ~36 g | Smooth PEI |
+| `Dispenser 2R tray smooth PEI.gcode.3mf` (rear push) | 1 | ~49 min | ~36 g | Smooth PEI |
+| `Side dispenser 2R prototype.gcode.3mf` (tray + sled + knob) | 1 | ~57 min | ~42 g | Smooth PEI |
 | `Slot test comb.gcode.3mf` / `Slot test comb Rustic.gcode.3mf` | 1 each | ~30 min | ~17 g | Textured PEI |
 | `Photo stands Minimal / Fluted / Rustic 2R-8R.gcode.3mf` | 1 each | ~3.9 / 4.7 / 4.9 h | ~225 g | Textured PEI |
 | `O1 Small jig <size>.gcode.3mf` (2R, 3R, 4R) | 1 each | ~1.2 h | ~55-65 g | Textured PEI, matte black |

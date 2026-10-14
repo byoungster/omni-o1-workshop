@@ -26,7 +26,7 @@ CLR = 0.75        # blank-to-pocket clearance per side
 WALL = 2.4
 RIM = 1.2         # outer rim left at the stacking rebate
 FIT = 0.2         # foot/plug clearance inside the rebate
-DISPENSER = True  # front slot at floor level + rear push notch (pull blanks while stacked)
+DISPENSER = 'side'  # 'side': spring sled + knob on the right; 'rear': finger notch in the back wall; None: plain
 SLOT_H = 1.6      # dispenser slot height: one 1 mm blank passes, two don't
 LINTEL = 2.0      # solid strip above the slot: bridges side wall to side wall and stops the stack
 FLOOR = 1.6
@@ -43,10 +43,33 @@ LABEL_D = 0.6
 TICK_D = 0.4
 GAP = 25.0
 LID_ROW_Y = -330.0
+ONLY = ('2R',)    # sizes to build (prototype); () builds every size
+
+# Side dispenser: a sled in a floor groove near the right wall, a zigzag spring printed on its front,
+# and a knob whose arm passes through a window in the right wall and plugs into the sled.
+SIDE_FLOOR = 6.0      # floor high enough that the knob arm clears the rim of the tray below
+GROOVE_IN = 6.0       # groove centre, measured in from the right pocket wall
+GROOVE_W = 6.6        # sled 6.0 + 0.3 clearance per side
+GROOVE_D = 2.4        # groove depth below the floor
+SLED_W = 6.0
+SLED_H = 2.2          # sled top stays 0.2 below the floor
+BLADE_UP = 0.7        # blade height above the floor: catches the bottom blank only
+BLADE_T = 1.6         # blade thickness, front to back
+TRAVEL = 21.0         # pushes ~15 mm of blank out of the front slot
+SPRING_LEN = 60.0     # target spring length; the sled takes the rest of the pocket
+SPRING_H = 1.8
+SPRING_BEAM = 0.8     # two 0.4 mm perimeters
+SPRING_PAD = 1.2
+SPRING_PRELOAD = 1.0  # spring is drawn 1 mm longer than its seat, so it holds the sled on its stop
+ARM_W, ARM_H = 5.0, 1.4
+KNOB = (6.0, 12.0, 13.8)  # knob block outside the right wall: x, y, z
 
 CHAMF = RIM + FIT                     # foot inset; 45 deg transition height
-if DISPENSER:
+if DISPENSER == 'side':
+    FLOOR = SIDE_FLOOR
+elif DISPENSER:
     FLOOR = REB + CHAMF + 0.4         # raise the floor above the stacking foot so the slot clears it
+ARM_Z0 = FLOOR - 1.8                  # arm bottom: above the rim of the tray below (~3 mm)
 POCKET_D = CAP * BLANK_T + REB + HEAD
 TRAY_H = FLOOR + POCKET_D
 R_OUT = R_POCKET + WALL
@@ -242,6 +265,79 @@ def split_seam(ctx, body, cx, cy, W, H, name):
 
 
 # ---------------------------------------------------------------- parts
+def side_geometry(w, h, cx, cy):
+    """Positions for the side dispenser, all in mm, at rest."""
+    W, H = dims(w, h)
+    pw, ph = w + 2 * CLR, h + 2 * CLR
+    g = {'W': W, 'H': H, 'pw': pw, 'ph': ph}
+    g['xg'] = cx + pw / 2 - GROOVE_IN                 # groove / sled centre line
+    g['y_pb'], g['y_pf'] = cy + ph / 2, cy - ph / 2   # pocket back / front faces
+    g['y_sb'] = g['y_pb'] + 0.6 + BLADE_T             # sled back face: blade rests just behind the blanks
+    g['y_gf'] = g['y_pf'] + 2.0                       # groove front end = spring seat
+    g['L_s'] = max(25.0, g['y_sb'] - g['y_gf'] - SPRING_LEN)
+    g['y_sf'] = g['y_sb'] - g['L_s']                  # sled front face (spring starts here)
+    g['y_a0'] = g['y_sf'] + ARM_W / 2 + 1.0           # arm centre, near the sled front (closest to the user)
+    g['ch'] = (g['y_a0'] - ARM_W / 2 - TRAVEL - 0.3, g['y_a0'] + ARM_W / 2)  # arm channel; back end = rest stop
+    g['z_gb'] = FLOOR - GROOVE_D                      # groove bottom
+    return g
+
+
+def box(ctx, name, x0, x1, y0, y1, z0, z1, op, body=None):
+    sk = ctx.sketch(z0, name)
+    sk.sketchCurves.sketchLines.addTwoPointRectangle(P3.create(x0 * MM, y0 * MM, 0), P3.create(x1 * MM, y1 * MM, 0))
+    return ctx.extrude(sk.profiles.item(0), z1 - z0, op, name, body)
+
+
+def side_cuts(ctx, body, w, h, cx, cy):
+    """Groove, blade bay, arm channel and wall window for the side dispenser."""
+    g = side_geometry(w, h, cx, cy)
+    cut = adsk.fusion.FeatureOperations.CutFeatureOperation
+    x0, x1 = g['xg'] - GROOVE_W / 2, g['xg'] + GROOVE_W / 2
+    box(ctx, 'Sled Groove', x0, x1, g['y_gf'], g['y_pb'] + WALL + 1, g['z_gb'], FLOOR, cut, body)
+    box(ctx, 'Blade Bay', x0, x1, g['y_pb'] - 0.01, g['y_pb'] + WALL + 1, FLOOR - 0.01, FLOOR + BLADE_UP + 0.3, cut, body)
+    box(ctx, 'Arm Channel', x1 - 0.01, cx + g['pw'] / 2 + 0.01, g['ch'][0], g['ch'][1], FLOOR - 2.0, FLOOR + 0.01, cut, body)
+    box(ctx, 'Arm Window', cx + g['pw'] / 2 - 0.01, cx + g['W'] / 2 + 1, g['ch'][0], g['ch'][1],
+        ARM_Z0 - 0.2, ARM_Z0 + ARM_H + 0.2, cut, body)
+
+
+def build_mechanism(ctx, lbl, w, h, cx, cy):
+    """Sled with blade and zigzag spring, and the knob with its arm, in their rest positions."""
+    g = side_geometry(w, h, cx, cy)
+    new = adsk.fusion.FeatureOperations.NewBodyFeatureOperation
+    join = adsk.fusion.FeatureOperations.JoinFeatureOperation
+    cut = adsk.fusion.FeatureOperations.CutFeatureOperation
+    xa, xb = g['xg'] - SLED_W / 2, g['xg'] + SLED_W / 2
+    sled = box(ctx, lbl + ' Sled', xa, xb, g['y_sf'], g['y_sb'], g['z_gb'], g['z_gb'] + SLED_H, new).bodies.item(0)
+    sled.name = lbl + ' Dispenser Sled'
+    box(ctx, lbl + ' Blade', xa, xb, g['y_sb'] - BLADE_T, g['y_sb'], g['z_gb'], FLOOR + BLADE_UP, join, sled)
+    box(ctx, lbl + ' Arm Socket', xb - 4.0, xb + 0.1, g['y_a0'] - 1.65, g['y_a0'] + 1.65,
+        g['z_gb'] + 0.5, g['z_gb'] + SLED_H + 0.1, cut, sled)
+    # zigzag spring from the sled front to its seat at the groove front end (drawn with preload)
+    seat = g['y_gf'] - SPRING_PRELOAD
+    length = g['y_sf'] - (seat + SPRING_PAD)
+    n = max(6, int(round(length / 4.0)))
+    pitch = length / n
+    amp = SLED_W / 2 - SPRING_BEAM
+    pts = [(g['xg'] - amp, g['y_sf'] + 0.3)]
+    pts += [(g['xg'] + (amp if i % 2 else -amp), g['y_sf'] - i * pitch) for i in range(1, n + 1)]
+    pts[-1] = (pts[-1][0], seat + SPRING_PAD - 0.3)
+    poly = offset_polyline(pts, SPRING_BEAM / 2) + list(reversed(offset_polyline(pts, -SPRING_BEAM / 2)))
+    sk = ctx.sketch(g['z_gb'], lbl + ' Spring')
+    polygon(sk, poly)
+    ctx.extrude(sk.profiles.item(0), SPRING_H, join, lbl + ' Spring', sled)
+    box(ctx, lbl + ' Spring Pad', xa, xb, seat, seat + SPRING_PAD, g['z_gb'], g['z_gb'] + SPRING_H, join, sled)
+    # knob: tongue into the sled socket, arm through the wall window, thumb block outside
+    knob = box(ctx, lbl + ' Knob Arm', xb, cx + g['W'] / 2 + 1.0, g['y_a0'] - ARM_W / 2, g['y_a0'] + ARM_W / 2,
+               ARM_Z0, ARM_Z0 + ARM_H, new).bodies.item(0)
+    knob.name = lbl + ' Dispenser Knob'
+    box(ctx, lbl + ' Knob Tongue', xb - 3.5, xb + 0.01, g['y_a0'] - 1.5, g['y_a0'] + 1.5,
+        ARM_Z0, ARM_Z0 + ARM_H, join, knob)
+    kx = cx + g['W'] / 2 + 1.0
+    box(ctx, lbl + ' Knob Block', kx - 0.01, kx + KNOB[0], g['y_a0'] - KNOB[1] / 2, g['y_a0'] + KNOB[1] / 2,
+        ARM_Z0, ARM_Z0 + KNOB[2], join, knob)
+    return sled, knob, g
+
+
 def build_tray(ctx, lbl, w, h, cx, cy):
     W, H = dims(w, h)
     n = lbl + ' Tray'
@@ -295,6 +391,9 @@ def build_tray(ctx, lbl, w, h, cx, cy):
                                                          P3.create((cx + pw / 2) * MM, (yi + R_POCKET + 0.5) * MM, 0))
         ctx.extrude(sk.profiles.item(0), SLOT_H, adsk.fusion.FeatureOperations.CutFeatureOperation,
                     n + ' Dispenser Slot', body)
+    if DISPENSER == 'side':
+        side_cuts(ctx, body, w, h, cx, cy)
+    elif DISPENSER == 'rear':
         # full-height finger notch through the back wall to push the bottom blank forward
         yb = cy + H / 2
         sk = ctx.sketch(0, n + ' Push Notch')
@@ -396,9 +495,13 @@ def run(_context: str):
     ctx = Ctx(des)
     xs = layout()
     for lbl, w, h in SIZES:
+        if ONLY and lbl not in ONLY:
+            continue
         W, H = dims(w, h)
         tray = build_tray(ctx, lbl, w, h, xs[lbl], 0)
         lid = build_lid(ctx, lbl, w, h, xs[lbl], LID_ROW_Y)
+        if DISPENSER == 'side':
+            build_mechanism(ctx, lbl, w, h, xs[lbl], 0)
         if max(W, H) > BED:
             split_seam(ctx, tray, xs[lbl], 0, W, H, lbl + ' Tray')
             split_seam(ctx, lid, xs[lbl], LID_ROW_Y, W, H, lbl + ' Lid')

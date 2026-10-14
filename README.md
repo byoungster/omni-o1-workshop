@@ -52,10 +52,15 @@ Thin sheets bow more as they get bigger, so 1 mm is best suited to the smaller s
 
 - Each tray holds 20 blanks flat, with 0.75 mm clearance per side.
 - Trays stack: the inset foot of one tray drops into the rim of the tray below, and a lid caps the top of a stack.
-- A full-height front notch lets you lift the top blank or push the bottom one up from below. Tick marks at
-  5, 10, 15 and 20 next to the notch show stock at a glance, since one blank is 1 mm of stack.
+- **Dispenser slot:** a slot one blank tall runs across the front at floor level, above the stacking joint.
+  Push the bottom blank out through it with a finger in the rear notch, without unstacking anything. A solid strip
+  above the slot holds back the rest of the stack (and prints as a clean bridge).
+- A front notch above the slot shows the stack against tick marks at 5, 10, 15 and 20 (one blank is 1 mm).
 - The 8R tray and lid are split in two with a dovetail seam so each half fits a 256 mm bed. Glue the halves with CA.
-- Print trays upright and lids upside down, exactly as exported. No supports are needed.
+- Print trays upright and lids upside down, exactly as exported. No supports are needed. The slot bridge is
+  65 mm on the 2R tray and grows to about 205 mm on 8R; test bridging on your printer before the big sizes.
+
+*Renders show the earlier version without the dispenser slot.*
 
 ![Front of a tray with stock ticks](docs/images/tray-front-stock-ticks.png)
 
@@ -107,7 +112,8 @@ its product page calls them standard and large. By size:
 | File | Plates | Time | PLA | Build plate |
 |---|---|---|---|---|
 | `Photo blanks 2R-8R 1mm.gcode.3mf` | 3 | ~3.2 h | ~170 g | Smooth PEI |
-| `Storage trays _ lids.gcode.3mf` | 8 | ~15.5 h | ~831 g | Textured PEI |
+| `Storage trays _ lids.gcode.3mf` | 9 | ~18.4 h | ~958 g | Textured PEI |
+| `Dispenser 2R tray smooth PEI.gcode.3mf` (prototype) | 1 | ~49 min | ~36 g | Smooth PEI |
 | `Slot test comb.gcode.3mf` / `Slot test comb Rustic.gcode.3mf` | 1 each | ~30 min | ~17 g | Textured PEI |
 | `Photo stands Minimal / Fluted / Rustic 2R-8R.gcode.3mf` | 1 each | ~3.9 / 4.7 / 4.9 h | ~225 g | Textured PEI |
 | `O1 Small jig <size>.gcode.3mf` (2R, 3R, 4R) | 1 each | ~1.2 h | ~55-65 g | Textured PEI, matte black |

@@ -3,6 +3,8 @@
 Each tray holds CAP blanks flat. A tray's inset foot drops into the rebate of the
 tray below; a lid (printed upside down) caps the top tray of a stack. A front notch
 runs the full height so the stack edge is visible against tick marks (1 blank = 1 mm).
+DISPENSER trays add a one-blank-tall slot across the front at floor level, above the stacking foot,
+and a finger notch in the back wall: push the bottom blank out of the front while trays stay stacked.
 Trays too long for BED are split in two with a dovetail seam (glue together).
 Always builds into a new document, so it never touches an open design.
 """
@@ -24,6 +26,9 @@ CLR = 0.75        # blank-to-pocket clearance per side
 WALL = 2.4
 RIM = 1.2         # outer rim left at the stacking rebate
 FIT = 0.2         # foot/plug clearance inside the rebate
+DISPENSER = True  # front slot at floor level + rear push notch (pull blanks while stacked)
+SLOT_H = 1.6      # dispenser slot height: one 1 mm blank passes, two don't
+LINTEL = 2.0      # solid strip above the slot: bridges side wall to side wall and stops the stack
 FLOOR = 1.6
 REB = 3.0         # rebate depth = foot height
 HEAD = 1.0        # headroom above a full stack plus the foot of the tray above
@@ -40,6 +45,8 @@ GAP = 25.0
 LID_ROW_Y = -330.0
 
 CHAMF = RIM + FIT                     # foot inset; 45 deg transition height
+if DISPENSER:
+    FLOOR = REB + CHAMF + 0.4         # raise the floor above the stacking foot so the slot clears it
 POCKET_D = CAP * BLANK_T + REB + HEAD
 TRAY_H = FLOOR + POCKET_D
 R_OUT = R_POCKET + WALL
@@ -174,7 +181,12 @@ def ring_profile(sk):
 
 
 def front_faces(body, y_face, cx):
-    left = right = None
+    """Largest planar face facing -Y at y_face on each side of the notch (the slot leaves thin strips).
+
+    When the notch stops short of the bottom (dispenser trays) the front is one U-shaped face; it is
+    then returned for both sides.
+    """
+    left = right = whole = None
     for f in body.faces:
         if f.geometry.surfaceType != adsk.core.SurfaceTypes.PlaneSurfaceType:
             continue
@@ -182,10 +194,14 @@ def front_faces(body, y_face, cx):
         if abs(n.y + 1) > 1e-6 or abs(f.pointOnFace.y - y_face * MM) > 1e-6:
             continue
         bb = f.boundingBox
-        if bb.maxPoint.x <= cx * MM:
+        if bb.maxPoint.x <= cx * MM and (left is None or f.area > left.area):
             left = f
-        elif bb.minPoint.x >= cx * MM:
+        elif bb.minPoint.x >= cx * MM and (right is None or f.area > right.area):
             right = f
+        elif whole is None or f.area > whole.area:
+            whole = f
+    if whole is not None and (left is None or whole.area > left.area) and (right is None or whole.area > right.area):
+        return whole, whole
     return left, right
 
 
@@ -256,19 +272,39 @@ def build_tray(ctx, lbl, w, h, cx, cy):
 
     # Full-height front notch, biting into the floor so the bottom blank can be pushed up
     yo, yi, r = cy - H / 2, cy - H / 2 + WALL, NOTCH_W / 2
-    sk = ctx.sketch(0, n + ' Notch')
+    # dispenser trays: the notch stops above the slot so a solid lintel spans the slot (printable bridge,
+    # and it holds back every blank but the bottom one)
+    sk = ctx.sketch(FLOOR + SLOT_H + LINTEL if DISPENSER else 0, n + ' Notch')
     L, A = sk.sketchCurves.sketchLines, sk.sketchCurves.sketchArcs
     la = L.addByTwoPoints(P3.create((cx - r) * MM, (yo - 1) * MM, 0), P3.create((cx + r) * MM, (yo - 1) * MM, 0))
     lb = L.addByTwoPoints(la.endSketchPoint, P3.create((cx + r) * MM, yi * MM, 0))
     lc = L.addByTwoPoints(P3.create((cx - r) * MM, yi * MM, 0), la.startSketchPoint)
-    A.addByThreePoints(lb.endSketchPoint, P3.create(cx * MM, (yi + r) * MM, 0), lc.startSketchPoint)
+    if DISPENSER:  # wall only: a hole in the floor would catch the blank sliding out
+        L.addByTwoPoints(lb.endSketchPoint, lc.startSketchPoint)
+    else:          # bite into the floor so the bottom blank can be pushed up from below
+        A.addByThreePoints(lb.endSketchPoint, P3.create(cx * MM, (yi + r) * MM, 0), lc.startSketchPoint)
     ctx.cut_through(sk.profiles.item(0), n + ' Notch', body)
+
+    if DISPENSER:
+        # one-blank slot across the front wall, sitting on the raised floor
+        pw = w + 2 * CLR
+        sk = ctx.sketch(FLOOR, n + ' Dispenser Slot')
+        sk.sketchCurves.sketchLines.addTwoPointRectangle(P3.create((cx - pw / 2) * MM, (yo - 1) * MM, 0),
+                                                         P3.create((cx + pw / 2) * MM, (yi + 0.01) * MM, 0))
+        ctx.extrude(sk.profiles.item(0), SLOT_H, adsk.fusion.FeatureOperations.CutFeatureOperation,
+                    n + ' Dispenser Slot', body)
+        # full-height finger notch through the back wall to push the bottom blank forward
+        yb = cy + H / 2
+        sk = ctx.sketch(0, n + ' Push Notch')
+        sk.sketchCurves.sketchLines.addTwoPointRectangle(P3.create((cx - r) * MM, (yb - WALL - 0.01) * MM, 0),
+                                                         P3.create((cx + r) * MM, (yb + 1) * MM, 0))
+        ctx.cut_through(sk.profiles.item(0), n + ' Push Notch', body)
 
     # Front label (left of notch) and stock ticks + counts (right of notch)
     left, right = front_faces(body, yo, cx)
     lh = label_h(lbl, W)
     x_l0, x_l1 = cx - W / 2 + R_OUT, cx - r
-    z_lo, z_hi = REB + CHAMF + 0.5, TRAY_H - REB - 0.5
+    z_lo, z_hi = (FLOOR + SLOT_H + 0.8 if DISPENSER else REB + CHAMF + 0.5), TRAY_H - REB - 0.5
     sk = ctx.root.sketches.add(left)
     sk.name = n + ' Label'
     txt = face_text(ctx, sk, lbl, lh, x_l0, x_l1, (z_lo + z_hi) / 2 - lh / 2, yo,
@@ -286,7 +322,8 @@ def build_tray(ctx, lbl, w, h, cx, cy):
     profs = adsk.core.ObjectCollection.create()
     for p in sk.profiles:  # skip the projected face outline; keep only the tick rectangles
         bb = p.boundingBox
-        if abs(bb.maxPoint.y - bb.minPoint.y) < 0.2 and abs(bb.maxPoint.x - bb.minPoint.x) < 1.0:
+        dims_ = sorted((abs(bb.maxPoint.x - bb.minPoint.x), abs(bb.maxPoint.y - bb.minPoint.y)))
+        if abs(dims_[0] - 0.08) < 0.005 and abs(dims_[1] - 0.5) < 0.005:  # exactly a 5 x 0.8 mm tick
             profs.add(p)
     if profs.count != 4:
         raise RuntimeError('expected 4 tick profiles, got %d' % profs.count)

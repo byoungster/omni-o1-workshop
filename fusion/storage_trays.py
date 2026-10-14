@@ -289,8 +289,10 @@ def build_tray(ctx, lbl, w, h, cx, cy):
         # one-blank slot across the front wall, sitting on the raised floor
         pw = w + 2 * CLR
         sk = ctx.sketch(FLOOR, n + ' Dispenser Slot')
+        # reach R_POCKET + 0.5 into the pocket: the pocket's rounded front corners would otherwise
+        # catch the blank's square corners as it slides out
         sk.sketchCurves.sketchLines.addTwoPointRectangle(P3.create((cx - pw / 2) * MM, (yo - 1) * MM, 0),
-                                                         P3.create((cx + pw / 2) * MM, (yi + 0.01) * MM, 0))
+                                                         P3.create((cx + pw / 2) * MM, (yi + R_POCKET + 0.5) * MM, 0))
         ctx.extrude(sk.profiles.item(0), SLOT_H, adsk.fusion.FeatureOperations.CutFeatureOperation,
                     n + ' Dispenser Slot', body)
         # full-height finger notch through the back wall to push the bottom blank forward

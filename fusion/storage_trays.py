@@ -101,14 +101,18 @@ T_CLR = 0.15          # T-slot clearance per side
 # drop the sled in, then the lever: the lever's pin keeps the button in, and the blanks keep the lever down.
 # (v3 was pushed 11 mm off the sled's line with nothing to stop it twisting, and it jammed.)
 BTN_FLOOR = 8.5               # floor raised 2.5 mm to stack the button, a roof and the lever under it
-BTN_Z0, BTN_H, BTN_W = 3.4, 1.8, 8.0   # plunger: bottom (above the rim of the tray below), height, width
+BTN_Z0, BTN_H, BTN_W = 3.4, 1.8, 9.0   # plunger: bottom (above the rim of the tray below), height, width
 BTN_HEAD = (12.0, 8.0, 2.5)   # thumb head outside the wall: width, height, thickness; bottoms on the wall at full stroke
 TUN_CLR = (0.25, 0.2, 0.5)    # button tunnel clearance: per side, below, above (the tunnel roof is a bridge)
 ROOF_T = 0.6                  # tunnel roof = floor of the lever pocket
-LEVER_R_IN, LEVER_R_OUT = 5.5, 16.5    # bell-crank arm lengths: 3:1
-LEVER_T, LEVER_W = 1.6, 4.0
+LEVER_R_IN, LEVER_R_OUT = 7.5, 22.5    # bell-crank arm lengths: 3:1. A 7.5 mm input arm keeps the button
+                                       # tunnel clear of the pivot post, so the post stands on solid floor
+LEVER_T, LEVER_W = 1.6, 6.0            # thickness; output arm width
 PIVOT_D, PIVOT_CLR = 3.5, 0.3          # pivot post (part of the tray) and radial clearance in the lever
-PIN_D, PIN_CLR = 3.0, 0.2              # lever pins and their clearance per side in the slots
+PIN_D_IN, PIN_D_OUT, PIN_CLR = 5.0, 4.0, 0.2  # lever pins (button side, sled side), clearance per side in the slots
+PIN_PAD = 1.5                 # solid lever around each pin
+PIN_FILLET = 0.6              # rounded pin roots spread the bending over more layers
+# (the first coupon's 3 mm pins snapped at the root: they print standing up, so they bend across the layers)
 EAR_WALL = 1.2                # wall around the slots in the button and the sled's ear
 BTN_SPRING = 'D'
 
@@ -523,18 +527,20 @@ def button_geometry(w, h, cx, cy):
     th = math.asin(TRAVEL / (2 * LEVER_R_OUT))
     g['th'] = th
     g['btn_travel'] = 2 * LEVER_R_IN * math.sin(th)
-    rp = PIN_D / 2 + PIN_CLR                                   # pin slot half-width
-    px = g['x_pw'] - (LEVER_R_IN * math.sin(th) + rp + 1.0)    # input pin stays 1 mm inside the wall
+    ri, ro = PIN_D_IN / 2 + PIN_CLR, PIN_D_OUT / 2 + PIN_CLR   # pin slot half-widths
+    g['rp_in'], g['rp_out'] = ri, ro
+    # input pin 1 mm inside the wall, and its pad on the lever 0.4 mm clear of it, so the lever lifts straight out
+    px = g['x_pw'] - (LEVER_R_IN * math.sin(th) + max(ri + 1.0, PIN_D_IN / 2 + PIN_PAD + 0.4))
     py = cy
     g['pivot'] = (px, py)
     g['pin_in'] = (px + LEVER_R_IN * math.sin(th), py + LEVER_R_IN * math.cos(th))      # at rest
     g['pin_out'] = (px - LEVER_R_OUT * math.cos(th), py + LEVER_R_OUT * math.sin(th))   # at rest
     # sled: its ear carries a slot along x for the output pin (Scotch yoke), entirely clear of the sled body
-    g['ear_slot'] = (px - LEVER_R_OUT - rp, px - LEVER_R_OUT * math.cos(th) + rp)
+    g['ear_slot'] = (px - LEVER_R_OUT - ro, px - LEVER_R_OUT * math.cos(th) + ro)
     g['xb'] = g['ear_slot'][0] - 0.3                           # sled right face
     g['xg'] = g['xb'] - SLED_W / 2
     g['ear_x1'] = g['ear_slot'][1] + EAR_WALL
-    g['ear_y'] = (g['pin_out'][1] - rp - EAR_WALL, g['pin_out'][1] + rp + EAR_WALL)
+    g['ear_y'] = (g['pin_out'][1] - ro - EAR_WALL, g['pin_out'][1] + ro + EAR_WALL)
     g['z_gb'] = BTN_Z0                                         # sled, ear, spring and button share this bottom
     g['y_sb'] = g['y_pb'] + 0.6 + BLADE_T
     g['y_gf'] = g['y_pf'] + 2.0
@@ -545,13 +551,17 @@ def button_geometry(w, h, cx, cy):
     g['sx_l'] = g['sx_r'] - sp['span']
     g['spring_x0'] = g['sx_l'] - r - sp['beam'] / 2 - 0.4
     # button: a slot along y for the input pin; the head bottoms on the wall after btn_travel
-    g['btn_slot_y'] = (py + LEVER_R_IN * math.cos(th) - rp, py + LEVER_R_IN + rp)
+    g['btn_slot_y'] = (py + LEVER_R_IN * math.cos(th) - ri, py + LEVER_R_IN + ri)
     g['y_b'] = sum(g['btn_slot_y']) / 2
-    g['btn_x0'] = g['pin_in'][0] - rp - EAR_WALL               # inner end at rest
+    g['btn_x0'] = g['pin_in'][0] - ri - EAR_WALL               # inner end at rest
     g['lever_z0'] = BTN_Z0 + BTN_H + TUN_CLR[2] + ROOF_T + 0.2
     g['hub_r'] = PIVOT_D / 2 + PIVOT_CLR + 2.0
     if g['lever_z0'] + LEVER_T > FLOOR - 0.3:
         raise RuntimeError('lever does not fit under the floor')
+    if g['y_b'] - BTN_W / 2 - TUN_CLR[0] < py + PIVOT_D / 2 + 0.3:
+        raise RuntimeError('button tunnel runs under the pivot post')
+    if (g['btn_slot_y'][1] - g['btn_slot_y'][0]) + 2 * 1.0 > BTN_W:
+        raise RuntimeError('button too narrow for its slot')
     return g
 
 
@@ -561,7 +571,7 @@ def button_cuts(ctx, body, w, h, cx, cy):
     sp, cut = g['sp'], adsk.fusion.FeatureOperations.CutFeatureOperation
     px, py = g['pivot']
     x0, x1 = g['xb'] - SLED_W - 0.3, g['xb'] + 0.3
-    zb, rp, th = g['z_gb'], PIN_D / 2 + PIN_CLR, g['th']
+    zb, th = g['z_gb'], g['th']
     box(ctx, 'Sled Groove', x0, x1, g['y_gf'], g['y_pb'] + WALL + 1, zb, FLOOR, cut, body)
     box(ctx, 'Spring Pocket', g['spring_x0'], x1, g['y_gf'], g['y_sf'] + HEADER_T + 0.5, zb, FLOOR, cut, body)
     box(ctx, 'Blade Bay', x0, x1, g['y_pb'] - 0.01, g['y_pb'] + WALL + 1, FLOOR - 0.01, FLOOR + BLADE_UP + 0.3, cut, body)
@@ -571,19 +581,21 @@ def button_cuts(ctx, body, w, h, cx, cy):
     box(ctx, 'Button Tunnel', g['btn_x0'] - g['btn_travel'] - 0.5, g['x_ow'] + 1,
         g['y_b'] - BTN_W / 2 - TUN_CLR[0], g['y_b'] + BTN_W / 2 + TUN_CLR[0], tz0, tz1, cut, body)
     # curved slot through the tunnel roof for the input pin
-    m = math.asin(rp / LEVER_R_IN) + math.radians(2)       # room for the whole pin at both ends of its swing
+    rs = g['rp_in'] + 0.3                                   # + room for the pin's root fillet
+    m = math.asin(rs / LEVER_R_IN) + math.radians(2)       # room for the whole pin at both ends of its swing
     sk = ctx.sketch(tz1 - 0.01, 'Input Pin Slot')
-    polygon(sk, annulus_pts(g['pivot'], LEVER_R_IN - rp, LEVER_R_IN + rp, math.pi / 2 - th - m, math.pi / 2 + th + m))
+    polygon(sk, annulus_pts(g['pivot'], LEVER_R_IN - rs, LEVER_R_IN + rs, math.pi / 2 - th - m, math.pi / 2 + th + m))
     ctx.extrude(sk.profiles.item(0), ROOF_T + 0.22, cut, 'Input Pin Slot', body)
     # lever pocket, open to the floor: the hub plus each arm (0.5 mm oversize) at nine points across its swing
     zl = g['lever_z0'] - 0.2
     sk = ctx.sketch(zl, 'Lever Pocket')
     rh = g['hub_r'] + 0.5
     sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(px * MM, py * MM, 0), rh * MM)
-    for r_arm, mid in ((LEVER_R_IN, math.pi / 2), (LEVER_R_OUT, math.pi)):
+    for r_arm, mid, wd in ((LEVER_R_IN, math.pi / 2, PIN_D_IN + 2 * PIN_PAD),
+                           (LEVER_R_OUT, math.pi, max(LEVER_W, PIN_D_OUT + 2 * PIN_PAD))):
         for k in range(9):
             a = mid - th + 2 * th * k / 8
-            polygon(sk, stadium_pts(g['pivot'], (px + r_arm * math.cos(a), py + r_arm * math.sin(a)), LEVER_W + 1.0))
+            polygon(sk, stadium_pts(g['pivot'], (px + r_arm * math.cos(a), py + r_arm * math.sin(a)), wd + 1.0))
     profs = adsk.core.ObjectCollection.create()
     for p_ in sk.profiles:
         profs.add(p_)
@@ -627,13 +639,12 @@ def build_button_mechanism(ctx, lbl, w, h, cx, cy):
     new = adsk.fusion.FeatureOperations.NewBodyFeatureOperation
     join = adsk.fusion.FeatureOperations.JoinFeatureOperation
     cut = adsk.fusion.FeatureOperations.CutFeatureOperation
-    rp = PIN_D / 2 + PIN_CLR
     xb = g['xb']
     sled = box(ctx, lbl + ' Sled', xb - SLED_W, xb, g['y_sf'], g['y_sb'], zb, zb + SLED_H, new).bodies.item(0)
     sled.name = lbl + ' Dispenser Sled'
     box(ctx, lbl + ' Blade', xb - SLED_W, xb, g['y_sb'] - BLADE_T, g['y_sb'], zb, FLOOR + BLADE_UP, join, sled)
     box(ctx, lbl + ' Sled Ear', xb - 0.01, g['ear_x1'], g['ear_y'][0], g['ear_y'][1], zb, zb + SLED_H, join, sled)
-    box(ctx, lbl + ' Ear Slot', g['ear_slot'][0], g['ear_slot'][1], g['pin_out'][1] - rp, g['pin_out'][1] + rp,
+    box(ctx, lbl + ' Ear Slot', g['ear_slot'][0], g['ear_slot'][1], g['pin_out'][1] - g['rp_out'], g['pin_out'][1] + g['rp_out'],
         zb - 0.1, zb + SLED_H + 0.1, cut, sled)
     box(ctx, lbl + ' Spring Header', g['sx_l'], xb, g['y_sf'], g['y_sf'] + HEADER_T, zb, zb + sp['h'], join, sled)
     meander(ctx, lbl, sled, sp, g['sx_l'], g['sx_r'], g['y_sf'], zb)
@@ -643,8 +654,10 @@ def build_button_mechanism(ctx, lbl, w, h, cx, cy):
     sk = ctx.sketch(zl, lbl + ' Lever')
     px, py = g['pivot']
     sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(px * MM, py * MM, 0), g['hub_r'] * MM)
-    polygon(sk, stadium_pts(g['pivot'], g['pin_in'], LEVER_W))
+    polygon(sk, stadium_pts(g['pivot'], g['pin_in'], PIN_D_IN + 2 * PIN_PAD))
     polygon(sk, stadium_pts(g['pivot'], g['pin_out'], LEVER_W))
+    sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(g['pin_out'][0] * MM, g['pin_out'][1] * MM, 0),
+                                                    (PIN_D_OUT / 2 + PIN_PAD) * MM)
     profs = adsk.core.ObjectCollection.create()
     for p_ in sk.profiles:
         profs.add(p_)
@@ -654,12 +667,23 @@ def build_button_mechanism(ctx, lbl, w, h, cx, cy):
     sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(px * MM, py * MM, 0), (PIVOT_D / 2 + PIVOT_CLR) * MM)
     ctx.extrude(sk.profiles.item(0), LEVER_T, cut, lbl + ' Lever Hole', lever)
     sk = ctx.sketch(zl, lbl + ' Lever Pins')
-    for p_ in (g['pin_in'], g['pin_out']):
-        sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(p_[0] * MM, p_[1] * MM, 0), PIN_D / 2 * MM)
+    for p_, d in ((g['pin_in'], PIN_D_IN), (g['pin_out'], PIN_D_OUT)):
+        sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(p_[0] * MM, p_[1] * MM, 0), d / 2 * MM)
     profs = adsk.core.ObjectCollection.create()
     for p_ in sk.profiles:
         profs.add(p_)
     ctx.extrude(profs, zl - (BTN_Z0 + 0.3), join, lbl + ' Lever Pins', lever, negative=True)
+    roots = adsk.core.ObjectCollection.create()
+    for e in lever.edges:
+        c = adsk.core.Circle3D.cast(e.geometry)
+        if c and abs(c.center.z - zl * MM) < 1e-4 and any(abs(c.radius - d / 2 * MM) < 1e-4 for d in (PIN_D_IN, PIN_D_OUT)):
+            roots.add(e)
+    if roots.count != 2:
+        raise RuntimeError('expected 2 pin root edges, found %d' % roots.count)
+    fl = ctx.root.features.filletFeatures
+    fi = fl.createInput()
+    fi.edgeSetInputs.addConstantRadiusEdgeSet(roots, VI.createByReal(PIN_FILLET * MM), True)
+    fl.add(fi).name = lbl + ' Pin Root Fillets'
 
     # button: plunger with a slot along y for the input pin, and a rounded thumb head outside the wall
     x_head = g['x_ow'] + g['btn_travel']
@@ -667,7 +691,7 @@ def build_button_mechanism(ctx, lbl, w, h, cx, cy):
     btn = box(ctx, lbl + ' Button', g['btn_x0'], x_head + 0.01, yb - BTN_W / 2, yb + BTN_W / 2,
               BTN_Z0, BTN_Z0 + BTN_H, new).bodies.item(0)
     btn.name = lbl + ' Dispenser Button'
-    box(ctx, lbl + ' Button Slot', g['pin_in'][0] - rp, g['pin_in'][0] + rp, g['btn_slot_y'][0], g['btn_slot_y'][1],
+    box(ctx, lbl + ' Button Slot', g['pin_in'][0] - g['rp_in'], g['pin_in'][0] + g['rp_in'], g['btn_slot_y'][0], g['btn_slot_y'][1],
         BTN_Z0 - 0.1, BTN_Z0 + BTN_H + 0.1, cut, btn)
     hw, hh, ht = BTN_HEAD
     zc = BTN_Z0 + BTN_H / 2

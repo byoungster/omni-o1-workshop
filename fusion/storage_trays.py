@@ -65,8 +65,8 @@ SPRINGS = {
     'B': dict(beam=0.8, segs=9, pitch=3.3),    # previous design, ~1.2%
     'C': dict(beam=1.2, segs=7, pitch=4.2),    # short and thick, ~2.4%: stiff, wears sooner
 }
-SPRING = 'A'                 # spring on the main sled
-TEST_SPRINGS = ('B', 'C')    # extra sleds that fit the same tray, to compare by hand; () for none
+SPRING = 'C'                 # spring on the main sled (C won the A/B/C sled test, 2026-10-14)
+TEST_SPRINGS = ()            # extra sleds that fit the same tray, to compare by hand; () for none
 SPRING_SPAN = 20.0    # bar length across the tray (centre line)
 SPRING_H = 1.8
 SPRING_PAD = 2.0      # rigid full-width seat pad at the far end

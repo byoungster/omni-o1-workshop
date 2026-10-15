@@ -286,6 +286,23 @@ class _ImplicitFTPS(ftplib.FTP_TLS):
             conn = self.context.wrap_socket(conn, server_hostname=self.host, session=self.sock.session)
         return conn, size
 
+    def storbinary(self, cmd, fp, blocksize=32768, callback=None, rest=None):
+        """ftplib's storbinary, but the TLS close on the data connection waits at most 5 s: the X1C
+        answers it, the P1S never does (unwrap() would hang until the socket timeout)."""
+        self.voidcmd('TYPE I')
+        with self.transfercmd(cmd, rest) as conn:
+            while buf := fp.read(blocksize):
+                conn.sendall(buf)
+                if callback:
+                    callback(buf)
+            if isinstance(conn, ssl.SSLSocket):
+                conn.settimeout(5)
+                try:
+                    conn.unwrap()
+                except (OSError, ssl.SSLError):
+                    pass
+        return self.voidresp()
+
 
 def _upload(path, remote, name='p1s'):
     """Copy a file to the printer's SD card over FTPS; returns the server's reply (226 on success)."""

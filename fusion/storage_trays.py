@@ -30,6 +30,13 @@ DISPENSER = 'button'  # 'button': side push-button + lever; 'side': v3 wall slid
 SLOT_H = 1.9      # dispenser slot height: one 1 mm blank passes with room for bridge sag, two (2 mm) don't
 LINTEL = 3.0      # solid strip above the slot: bridges side wall to side wall and stops the stack
 # (v1 had a 1.6 mm slot under a 2 mm lintel; the bridge sagged until blanks bound in the slot)
+# Button trays have no slot bridge at all: the front is open in the middle, and a stop grows out of each side
+# wall (a short flat ledge, then a 45 degree underside) that holds back every blank but the bottom one by its
+# corners. Nothing spans the opening, so nothing sags or strings. (The 65 mm slot bridge always drooped and
+# left strings that caught the blank, even at 1.9 mm with reduced bridge flow.)
+FRONT_GAP = 1.5       # gap under the stops: one 1 mm blank passes, the next one's corners are caught
+FRONT_STOP = 3.0      # flat part of each stop, from the side wall (a short overhang, no bridge)
+FRONT_STUB = 15.5     # each stop widens at 45 degrees to this, then runs straight up (room for the label)
 FLOOR = 1.6
 REB = 3.0         # rebate depth = foot height
 HEAD = 1.0        # headroom above a full stack plus the foot of the tray above
@@ -699,6 +706,36 @@ def build_button_mechanism(ctx, lbl, w, h, cx, cy):
     return sled, lever, btn, g
 
 
+def xz_prism(ctx, name, pts, y0, y1, op, body):
+    """Prism along Y from y0 to y1 whose cross-section is the closed (x, z) outline pts."""
+    ym = (y0 + y1) / 2
+    for sign in (1, -1):
+        pi = ctx.root.constructionPlanes.createInput()
+        pi.setByOffset(ctx.root.xZConstructionPlane, VI.createByReal(sign * ym * MM))
+        pl = ctx.root.constructionPlanes.add(pi)
+        if abs(pl.geometry.origin.y - ym * MM) < 1e-6:
+            break
+        pl.deleteMe()
+    pl.isLightBulbOn = False
+    sk = ctx.root.sketches.add(pl)
+    sk.name = name
+    sk.isVisible = False
+    sp = [sk.modelToSketchSpace(P3.create(x * MM, ym * MM, z * MM)) for x, z in pts]
+    L = sk.sketchCurves.sketchLines
+    first = prev = None
+    for i in range(len(sp)):
+        prev = L.addByTwoPoints(prev.endSketchPoint if prev else sp[0],
+                                first.startSketchPoint if i == len(sp) - 1 else sp[i + 1])
+        first = first or prev
+    ext = ctx.root.features.extrudeFeatures
+    ei = ext.createInput(sk.profiles.item(0), op)
+    ei.setSymmetricExtent(VI.createByReal((y1 - y0) * MM), True)
+    ei.participantBodies = [body]
+    f = ext.add(ei)
+    f.name = name
+    return f
+
+
 def build_tray(ctx, lbl, w, h, cx, cy):
     W, H = dims(w, h)
     n = lbl + ' Tray'
@@ -729,6 +766,15 @@ def build_tray(ctx, lbl, w, h, cx, cy):
 
     # Full-height front notch, biting into the floor so the bottom blank can be pushed up
     yo, yi, r = cy - H / 2, cy - H / 2 + WALL, NOTCH_W / 2
+    pw = w + 2 * CLR
+    slot_h = FRONT_GAP if DISPENSER == 'button' else SLOT_H
+    if DISPENSER == 'button':
+        # open front: the opening narrows at 45 degrees from the two flat stops, then runs straight up
+        xs, xt, zb = pw / 2 - FRONT_STOP, pw / 2 - FRONT_STUB, FLOOR + slot_h
+        zt = zb + (FRONT_STUB - FRONT_STOP)
+        xz_prism(ctx, n + ' Open Front', [(cx - xs, zb), (cx + xs, zb), (cx + xt, zt), (cx + xt, TRAY_H + 1),
+                                          (cx - xt, TRAY_H + 1), (cx - xt, zt)], yo - 1, yi + 0.5,
+                 adsk.fusion.FeatureOperations.CutFeatureOperation, body)
     # dispenser trays: the notch stops above the slot so a solid lintel spans the slot (printable bridge,
     # and it holds back every blank but the bottom one)
     sk = ctx.sketch(FLOOR + SLOT_H + LINTEL if DISPENSER else 0, n + ' Notch')
@@ -740,17 +786,17 @@ def build_tray(ctx, lbl, w, h, cx, cy):
         L.addByTwoPoints(lb.endSketchPoint, lc.startSketchPoint)
     else:          # bite into the floor so the bottom blank can be pushed up from below
         A.addByThreePoints(lb.endSketchPoint, P3.create(cx * MM, (yi + r) * MM, 0), lc.startSketchPoint)
-    ctx.cut_through(sk.profiles.item(0), n + ' Notch', body)
+    if DISPENSER != 'button':
+        ctx.cut_through(sk.profiles.item(0), n + ' Notch', body)
 
     if DISPENSER:
         # one-blank slot across the front wall, sitting on the raised floor
-        pw = w + 2 * CLR
         sk = ctx.sketch(FLOOR, n + ' Dispenser Slot')
         # reach R_POCKET + 0.5 into the pocket: the pocket's rounded front corners would otherwise
         # catch the blank's square corners as it slides out
         sk.sketchCurves.sketchLines.addTwoPointRectangle(P3.create((cx - pw / 2) * MM, (yo - 1) * MM, 0),
                                                          P3.create((cx + pw / 2) * MM, (yi + R_POCKET + 0.5) * MM, 0))
-        ctx.extrude(sk.profiles.item(0), SLOT_H, adsk.fusion.FeatureOperations.CutFeatureOperation,
+        ctx.extrude(sk.profiles.item(0), slot_h, adsk.fusion.FeatureOperations.CutFeatureOperation,
                     n + ' Dispenser Slot', body)
     if DISPENSER == 'side':
         side_cuts(ctx, body, w, h, cx, cy)
@@ -769,11 +815,17 @@ def build_tray(ctx, lbl, w, h, cx, cy):
     lh = label_h(lbl, W)
     x_l0, x_l1 = cx - W / 2 + R_OUT, cx - r
     z_lo, z_hi = (FLOOR + SLOT_H + 0.8 if DISPENSER else REB + CHAMF + 0.5), TRAY_H - REB - 0.5
+    if DISPENSER == 'button':   # label on the left stop, above its 45 degree part; the open front shows the stock
+        x_l1 = cx - (pw / 2 - FRONT_STUB)
+        lh = min(9.0, math.floor(0.8 * (x_l1 - x_l0) / (0.99 * len(lbl))))
+        z_lo = FLOOR + slot_h + (FRONT_STUB - FRONT_STOP) + 0.8
     sk = ctx.root.sketches.add(left)
     sk.name = n + ' Label'
     txt = face_text(ctx, sk, lbl, lh, x_l0, x_l1, (z_lo + z_hi) / 2 - lh / 2, yo,
                     adsk.core.HorizontalAlignments.CenterHorizontalAlignment)
     ctx.extrude(txt, LABEL_D, adsk.fusion.FeatureOperations.CutFeatureOperation, n + ' Label', body, negative=True)
+    if DISPENSER == 'button':
+        return body
 
     sk = ctx.root.sketches.add(right)
     sk.name = n + ' Stock Ticks'

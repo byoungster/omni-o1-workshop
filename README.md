@@ -92,6 +92,13 @@ jammed: it was pushed 11 mm off the sled's line with nothing to stop it twisting
 - **Spring D:** 0.3 N at rest and 1.1 N at full stroke, at 0.8% bar strain. Print the moving parts in PETG, which
   rubs with less friction and creeps less.
 - **Test coupon:** the tray cut 15 mm high. It keeps the whole mechanism and holds a few blanks.
+- **Open front, no slot bridge:** the 65 mm bridge over the old slot always sagged and left strings that caught
+  the blank. The front is now open in the middle, and a stop grows out of each side wall: a 3 mm ledge 1.5 mm
+  above the floor, then a 45° underside, so nothing needs a bridge. The bottom blank slides out under the stops,
+  and the next one is caught by its corners. You can see the stack through the opening, so this version has no
+  tick marks.
+- **Pins:** 5 mm (button) and 4 mm (sled), with rounded roots. The first 3 mm pins snapped, because they print
+  standing up.
 
 ![Front of a tray with stock ticks](docs/images/tray-front-stock-ticks.png)
 

@@ -5,6 +5,7 @@ p1s_access_code) and never from files. Status, camera and light work while the p
 Bambu Cloud; uploading and starting prints needs LAN-only + Developer Mode and a microSD card.
 """
 import datetime
+import ftplib
 import json
 import os
 import re
@@ -261,6 +262,51 @@ def light(on, name='p1s'):
         p.disconnect()
 
 
+class _ImplicitFTPS(ftplib.FTP_TLS):
+    """Implicit FTPS (port 990) whose data connections reuse the control connection's TLS session.
+    The X1C refuses anything else ('522 SSL connection failed: session reuse required')."""
+
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k)
+        self._sock = None
+
+    @property
+    def sock(self):
+        return self._sock
+
+    @sock.setter
+    def sock(self, value):
+        if value is not None and not isinstance(value, ssl.SSLSocket):
+            value = self.context.wrap_socket(value)
+        self._sock = value
+
+    def ntransfercmd(self, cmd, rest=None):
+        conn, size = ftplib.FTP.ntransfercmd(self, cmd, rest)
+        if self._prot_p:
+            conn = self.context.wrap_socket(conn, server_hostname=self.host, session=self.sock.session)
+        return conn, size
+
+
+def _upload(path, remote, name='p1s'):
+    """Copy a file to the printer's SD card over FTPS; returns the server's reply (226 on success)."""
+    ip, serial, code = _creds(name)
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE  # the printer presents a self-signed certificate
+    f = _ImplicitFTPS(context=ctx, timeout=60)
+    try:
+        f.connect(ip, 990)
+        f.login('bblp', code)
+        f.prot_p()
+        with open(path, 'rb') as fh:
+            return f.storbinary('STOR ' + remote, fh, blocksize=32768)
+    finally:
+        try:
+            f.quit()
+        except Exception:
+            f.close()
+
+
 def _slice_entry(path):
     path = os.path.abspath(path)
     for e in reversed(bs.journal(limit=100000)):
@@ -311,11 +357,15 @@ def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=None, name='p
         use_ams = bool(st['ams'])
     trays = {int(u['unit']) * 4 + int(t['slot']): t for u in st['ams'] for t in u['trays'] if t.get('type')}
     want = (color or bs.load_recipe(entry['recipe']).get('ams_color') or '').upper().lstrip('#')
+    ftype = (bp.resolve('filament', entry['presets']['filament']).get('filament_type') or [''])[0].upper()
     if use_ams and ams_slot is None:
-        match = [i for i, t in sorted(trays.items()) if want and (t.get('color') or '').upper().startswith(want)]
-        if want and not match:
-            raise RuntimeError('no AMS slot holds colour %s; load it or pass ams_slot' % want)
-        ams_slot = match[0] if match else 0
+        # match the material as well as the colour: black PETG and black PLA can sit side by side
+        match = [i for i, t in sorted(trays.items())
+                 if (t.get('type') or '').upper() == ftype and (not want or (t.get('color') or '').upper().startswith(want))]
+        if not match:
+            raise RuntimeError('no AMS slot holds %s%s (trays: %s); load it or pass ams_slot' % (
+                ftype, ' colour ' + want if want else '', {i: (t.get('type'), t.get('color')) for i, t in sorted(trays.items())}))
+        ams_slot = match[0]
     tray = trays.get(ams_slot or 0, {})
     plan = {'job_id': entry['job_id'], 'plate': plate, 'objects': plate_info['objects'],
             'minutes': plate_info['minutes'], 'grams': plate_info['grams'],
@@ -328,12 +378,7 @@ def print_job(path, plate=1, confirm=False, use_ams=None, ams_slot=None, name='p
         raise RuntimeError('no microSD card in the printer; LAN printing needs one')
 
     remote = re.sub(r'[^\w\-.]', '_', '%s_p%d.gcode.3mf' % (entry['job_id'], plate))
-    p = _api(name)
-    try:
-        with open(path, 'rb') as fh:
-            up = p.upload_file(fh, remote)
-    finally:
-        p.disconnect()
+    up = _upload(path, remote, name)
     if '226' not in str(up):
         raise RuntimeError('upload failed: %s' % up)
     t0 = time.time()

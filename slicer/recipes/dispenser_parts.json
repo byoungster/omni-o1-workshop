@@ -1,0 +1,17 @@
+{
+  "description": "Side-dispenser sleds (printed serpentine springs), knobs and trays: black matte PLA on textured PEI. Tune spring settings here.",
+  "machine": "Bambu Lab X1 Carbon 0.4 nozzle",
+  "process": "0.20mm Standard @BBL X1C",
+  "filament": "Bambu PLA Matte @BBL X1C",
+  "bed_type": "Textured PEI Plate",
+  "ams_color": "000000",
+  "overrides": {
+    "process": {
+      "wall_loops": "3"
+    }
+  },
+  "changelog": [
+    "2026-10-14  created for the X1C: black PLA Matte (AMS slot 1; slot 0 is black PETG), textured PEI",
+    "2026-10-14  note: spring bars are 0.8 mm = two perimeter lines; print the winning sled in PETG later"
+  ]
+}

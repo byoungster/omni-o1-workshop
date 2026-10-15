@@ -112,11 +112,17 @@ its product page calls them standard and large. By size:
   between pockets where possible. Butt the tiles together on the plate (or glue them with CA).
 - Print in **matte black** PLA: plain and matte so the O1's scan picks out the white blanks.
 - Calibrate once: tape over the jig, print the template, measure the offset, correct it in xTool Studio.
-- Plate-edge registration clips are coming once the physical plates are measured.
+- **Registration frame (small plate):** two identical halves drop over the plate, one on each end (turn the
+  second half around). Skirts hug the end, the rounded R4 corners, and the front and back faces, so the frame
+  sits square and can't slide. Its window is the print area plus 0.3 mm, so any jig drops in at the same spot.
+  Swap jigs by lifting one out and dropping the next in. Tab reliefs clear the mat's pull tab either way round.
+  The plate figures (344 × 128 mm top face, R4 corners) come from published third-party fits, since xTool only
+  gives the print area. The large-plate frame waits on a measurement of that plate's depth.
 
-`fusion/o1_jigs.py` generates jigs for any flat rectangular item: add a line to `ITEMS`.
+`fusion/o1_jigs.py` generates jigs for any flat rectangular item: add a line to `ITEMS`. `fusion/o1_frame.py`
+builds the registration frame.
 
-## Printing on a Bambu Lab P1S## Printing on a Bambu Lab P1S
+## Printing on a Bambu Lab P1S
 
 | File | Plates | Time | PLA | Build plate |
 |---|---|---|---|---|
@@ -124,10 +130,12 @@ its product page calls them standard and large. By size:
 | `Storage trays _ lids.gcode.3mf` | 9 | ~18.4 h | ~958 g | Textured PEI |
 | `Dispenser 2R tray smooth PEI.gcode.3mf` (rear push) | 1 | ~49 min | ~36 g | Smooth PEI |
 | `Side dispenser 2R prototype.gcode.3mf` (tray, sleds A/B/C, knob) | 1 | ~65 min | ~45 g | Smooth PEI |
+| `X1C 2R side dispenser set _spring C_.gcode.3mf` (X1 Carbon: tray, lid, sled, knob) | 1 | ~81 min | ~62 g | Textured PEI |
 | `Slot test comb.gcode.3mf` / `Slot test comb Rustic.gcode.3mf` | 1 each | ~30 min | ~17 g | Textured PEI |
 | `Photo stands Minimal / Fluted / Rustic 2R-8R.gcode.3mf` | 1 each | ~3.9 / 4.7 / 4.9 h | ~225 g | Textured PEI |
 | `O1 Small jig <size>.gcode.3mf` (2R, 3R, 4R) | 1 each | ~1.2 h | ~55-65 g | Textured PEI, matte black |
 | `O1 Large jig <size>.gcode.3mf` (2R-8R) | 3-4 each | ~3.5-4 h | ~160-205 g | Textured PEI, matte black |
+| `O1 Small frame halves x2 smooth PEI.gcode.3mf` | 2 | ~25 min each | ~14 g each | Smooth or textured PEI, black |
 
 Open the file in Bambu Studio and print plate by plate. For other printers, slice the 3MF models in
 `exports/` with your own profiles.
@@ -143,6 +151,8 @@ connected to Fusion's built-in MCP server.
 - `place_blanks_in_trays.py` copies the blanks into their trays as a fit check.
 - `photo_stands.py` builds the slot stands (three styles) and the slot-width test combs in a new document.
 - `o1_jigs.py` builds tiled batch jigs for the xTool O1 Omni in a new document.
+- `o1_frame.py` builds one half of the small-plate registration frame (print two), with a fit check against a
+  stand-in plate and jig.
 
 ## Slicing pipeline and MCP server
 
@@ -200,7 +210,7 @@ it to your phone (Home Assistant Companion app) with the job name and filament w
 
 - Home Assistant as the hub: ESP32 camera and LED status lights, more automations
 - Slack bot: request a design in Slack, approve it, and get a photo back when the print finishes
-- O1 plate registration clips; jigs for magnets, ornaments, badges, phone cases
+- O1 large-plate registration frame; jigs for magnets, ornaments, badges, phone cases
 - Automated plate handling
 
 ## License

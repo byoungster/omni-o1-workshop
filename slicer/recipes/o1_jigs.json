@@ -8,11 +8,13 @@
   "overrides": {
     "process": {
       "bottom_shell_layers": "4",
-      "top_shell_layers": "4"
+      "top_shell_layers": "4",
+      "wall_loops": "3"
     }
   },
   "changelog": [
     "2026-10-13  created; matte black for contrast with white blanks and no UV reflection (research: plain matte jig, contrasting colour)",
-    "2026-10-13  process.top/bottom_shell_layers: 4/4  (1.7 mm jig with 0.8 mm floor prints fully solid, stays flat)"
+    "2026-10-13  process.top/bottom_shell_layers: 4/4  (1.7 mm jig with 0.8 mm floor prints fully solid, stays flat)",
+    "2026-10-14  process.wall_loops: (preset default) -> 3  (frame halves have 2.4 mm skirt walls: 3 loops print them solid (same as the trays))"
   ]
 }

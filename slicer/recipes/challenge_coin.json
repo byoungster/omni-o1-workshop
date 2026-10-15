@@ -1,0 +1,23 @@
+{
+  "description": "Challenge coin blanks for UV printing on both faces: white PLA, solid (100% infill), smooth PEI for a flat glossy bottom face, ironed top face.",
+  "machine": "Bambu Lab P1S 0.4 nozzle",
+  "process": "0.16mm Optimal @BBL X1C",
+  "filament": "Bambu PLA Basic @BBL P1S 0.4 nozzle",
+  "bed_type": "High Temp Plate",
+  "ams_color": "FFFFFF",
+  "overrides": {
+    "process": {
+      "sparse_infill_density": "100%",
+      "sparse_infill_pattern": "zig-zag",
+      "ironing_type": "top",
+      "wall_loops": "3"
+    }
+  },
+  "changelog": [
+    "2026-10-15  created for fusion/challenge_coin.py",
+    "2026-10-15  process.sparse_infill_density: (preset default) -> 100%  (solid coin (user asked for 100% infill))",
+    "2026-10-15  process.sparse_infill_pattern: (preset default) -> zig-zag  (straight lines fill solid at 100%; the gyroid default leaves gaps)",
+    "2026-10-15  process.ironing_type: (preset default) -> top  (flat, smooth top face for UV printing (the bottom face is smooth PEI))",
+    "2026-10-15  process.wall_loops: (preset default) -> 3  (crisp reeded edge)"
+  ]
+}

@@ -17,6 +17,7 @@ versioned settings, and LAN control of a Bambu Lab P1S.
 | `exports/photo_stands/` | 3MF models of 15° slot stands in three styles (Minimal, Fluted, Rustic), plus slot-width test combs |
 | `exports/storage_side_dispenser/` | 3MF models of the 2R side-dispenser tray, lid, spring sled and knob |
 | `exports/o1_jigs/` | 3MF tiles of batch jigs and the registration frame for the xTool O1 Omni flat bed (small 330×122 and large 330×420 plates) |
+| `exports/challenge_coins/` | 3MF challenge coin blank (1.75 in) for UV printing on both faces |
 | `exports/bambu_projects/` | Bambu Studio projects: plates laid out with the settings used here, no G-code (see below) |
 | `cad/` | Editable designs as STEP, which opens in Fusion and any other CAD program |
 | `fusion/` | Fusion API scripts that generate every design from parameters |
@@ -122,6 +123,16 @@ jammed: it was pushed 11 mm off the sled's line with nothing to stop it twisting
 - Print upright as exported, no supports. Matte PLA hides layer lines.
 
 ![Fluted stand](docs/images/stand-fluted.png)
+
+## Challenge coins
+
+A 1.75 in (44.45 mm) challenge coin blank, 3 mm thick, for UV printing artwork on both faces.
+- **Faces:** both flat. The bottom face prints glossy on smooth PEI, and the `challenge_coin` recipe irons the
+  top face.
+- **Infill:** 100%, so the coin feels solid (about 5.7 g in PLA). White PLA gives the UV inks a true-colour base.
+- **Edge:** 0.4 mm chamfers on both faces and a 90-groove reeded edge, so it feels like a struck coin.
+- `fusion/challenge_coin.py` builds it. Set `SIZES` for the other common sizes (1.5 in, 2 in), and `REEDS = 0`
+  for a plain edge.
 
 ## Batch jigs for the xTool O1 Omni
 

@@ -27,8 +27,9 @@ WALL = 2.4
 RIM = 1.2         # outer rim left at the stacking rebate
 FIT = 0.2         # foot/plug clearance inside the rebate
 DISPENSER = 'side'  # 'side': spring sled + knob on the right; 'rear': finger notch in the back wall; None: plain
-SLOT_H = 1.6      # dispenser slot height: one 1 mm blank passes, two don't
-LINTEL = 2.0      # solid strip above the slot: bridges side wall to side wall and stops the stack
+SLOT_H = 1.9      # dispenser slot height: one 1 mm blank passes with room for bridge sag, two (2 mm) don't
+LINTEL = 3.0      # solid strip above the slot: bridges side wall to side wall and stops the stack
+# (v1 had a 1.6 mm slot under a 2 mm lintel; the bridge sagged until blanks bound in the slot)
 FLOOR = 1.6
 REB = 3.0         # rebate depth = foot height
 HEAD = 1.0        # headroom above a full stack plus the foot of the tray above
@@ -46,7 +47,7 @@ LID_ROW_Y = -330.0
 ONLY = ('2R',)    # sizes to build (prototype); () builds every size
 
 # Side dispenser: a sled in a floor groove near the right wall, a zigzag spring printed on its front,
-# and a knob whose arm passes through a window in the right wall and plugs into the sled.
+# and a knob whose arm passes through a window in the right wall and slides a dovetail into the sled.
 SIDE_FLOOR = 6.0      # floor high enough that the knob arm clears the rim of the tray below
 GROOVE_IN = 6.0       # groove centre, measured in from the right pocket wall
 GROOVE_W = 6.6        # sled 6.0 + 0.3 clearance per side
@@ -72,19 +73,28 @@ SPRING_H = 1.8
 SPRING_PAD = 2.0      # rigid full-width seat pad at the far end
 HEADER_T = 2.4        # rigid full-width header on the sled front; the spring grows out of it through a U-bend
 SPRING_PRELOAD = 1.0  # spring is drawn 1 mm longer than its seat, so it holds the sled on its stop
-ARM_W, ARM_H = 5.0, 1.4
-KNOB_T, KNOB_W, KNOB_H = 6.0, 14.0, 15.0  # rounded thumb pad outside the right wall: depth, width, height
-KNOB_BEVEL = 1.5      # outer edge bevel
-KNOB_BUMP_R, KNOB_BUMP_H, KNOB_BUMP_P = 1.1, 0.4, 3.2  # low rounded grip bumps: base radius, height, spacing (3 x 3)
-KNOB_BUMP_TAPER = -15  # gentle sides
-KNOB_BUMPS = False    # plain rounded pad (user: the knob shape gives enough grip)
+# Knob: a low-profile slider set into the right wall. Its tab fills a window through the wall, so the wall
+# guides it; a thin grip plate with a thumb rib sits just outside, and an arm runs under the floor to a T-head.
+# Fit the knob through the window first, then drop the sled in: a T-slot through the sled closes around the
+# head, so the knob can't fall out or pull free, and it's balanced over the wall instead of hanging off it.
+# (v1: a 7 mm knob cantilevered off the wall on a tongue that sat loose in an open slot; it tipped, rocked
+# out of the sled when pushed off-centre, and wedged in the window.)
+KNOB_Z0 = SIDE_FLOOR - GROOVE_D + 0.2  # bottom of every knob feature (it prints flat on this face)
+TAB_H, TAB_L = 1.9, 12.0  # tab in the wall window: height, length along the travel
+WIN_CLR = 0.15        # window clearance above and below the tab
+GRIP_T, GRIP_H, GRIP_L = 1.6, 8.0, 14.0  # grip plate outside the wall: thickness, height, length
+GRIP_GAP = 0.3        # grip plate to wall face
+RIB_T, RIB_W = 1.0, 2.0  # thumb rib on the grip's back edge; the thumb pushes it forward
+ARM_T, ARM_W = 1.6, 2.4  # arm under the floor: thickness, width
+HEAD_W, HEAD_L = 4.0, 1.6  # T-head on the end of the arm
+NECK_X = 1.8          # T-slot neck length, from the sled's wall side
+T_CLR = 0.15          # T-slot clearance per side
 
 CHAMF = RIM + FIT                     # foot inset; 45 deg transition height
 if DISPENSER == 'side':
     FLOOR = SIDE_FLOOR
 elif DISPENSER:
     FLOOR = REB + CHAMF + 0.4         # raise the floor above the stacking foot so the slot clears it
-ARM_Z0 = FLOOR - 1.8                  # arm bottom: above the rim of the tray below (~3 mm)
 POCKET_D = CAP * BLANK_T + REB + HEAD
 TRAY_H = FLOOR + POCKET_D
 R_OUT = R_POCKET + WALL
@@ -305,8 +315,10 @@ def side_geometry(w, h, cx, cy, spring=None):
     g['sx_l'] = g['sx_r'] - SPRING_SPAN
     g['y_sf_max'] = g['y_gf'] - SPRING_PRELOAD + max(spring_len(v) for v in SPRINGS.values())
     g['spring_x0'] = min(g['xg'] + SLED_W / 2 - v['pitch'] - v['beam'] - SPRING_SPAN - 0.4 for v in SPRINGS.values())
-    g['y_a0'] = g['y_sf_max'] + HEADER_T + ARM_W / 2 + 1.0   # arm socket behind the header, same on every variant
-    g['ch'] = (g['y_a0'] - ARM_W / 2 - TRAVEL - 0.3, g['y_a0'] + ARM_W / 2)  # arm channel; back end = rest stop
+    g['y_k'] = g['y_sf_max'] + HEADER_T + HEAD_W / 2 + T_CLR + 1.5   # knob centre at rest, behind every variant's header
+    g['win'] = (g['y_k'] - TAB_L / 2 - TRAVEL - 0.3, g['y_k'] + TAB_L / 2)   # wall window; its back end is the rest stop
+    # arm channel under the floor: wide enough for the T-head to pass when the knob is fitted
+    g['ch'] = (g['y_k'] - HEAD_W / 2 - T_CLR - TRAVEL - 0.3, g['y_k'] + HEAD_W / 2 + T_CLR + 0.3)
     g['z_gb'] = FLOOR - GROOVE_D                      # groove bottom
     return g
 
@@ -325,9 +337,9 @@ def side_cuts(ctx, body, w, h, cx, cy):
     box(ctx, 'Sled Groove', x0, x1, g['y_gf'], g['y_pb'] + WALL + 1, g['z_gb'], FLOOR, cut, body)
     box(ctx, 'Spring Pocket', g['spring_x0'], x1, g['y_gf'], g['y_sf_max'] + HEADER_T + 0.5, g['z_gb'], FLOOR, cut, body)
     box(ctx, 'Blade Bay', x0, x1, g['y_pb'] - 0.01, g['y_pb'] + WALL + 1, FLOOR - 0.01, FLOOR + BLADE_UP + 0.3, cut, body)
-    box(ctx, 'Arm Channel', x1 - 0.01, cx + g['pw'] / 2 + 0.01, g['ch'][0], g['ch'][1], FLOOR - 2.0, FLOOR + 0.01, cut, body)
-    box(ctx, 'Arm Window', cx + g['pw'] / 2 - 0.01, cx + g['W'] / 2 + 1, g['ch'][0], g['ch'][1],
-        ARM_Z0 - 0.2, ARM_Z0 + ARM_H + 0.2, cut, body)
+    box(ctx, 'Arm Channel', x1 - 0.01, cx + g['pw'] / 2 + 0.01, g['ch'][0], g['ch'][1], g['z_gb'], FLOOR + 0.01, cut, body)
+    box(ctx, 'Knob Window', cx + g['pw'] / 2 - 0.01, cx + g['W'] / 2 + 1, g['win'][0], g['win'][1],
+        KNOB_Z0 - WIN_CLR, KNOB_Z0 + TAB_H + WIN_CLR, cut, body)
 
 
 def yz_plane(ctx, x):
@@ -343,6 +355,33 @@ def yz_plane(ctx, x):
     raise RuntimeError('could not place plane at x=%s' % x)
 
 
+def yz_extrude(ctx, body, x, outline, dist, name):
+    """Join a (y, z) outline drawn on the plane X = x to body, extruded dist mm toward +X."""
+    sk = ctx.root.sketches.add(yz_plane(ctx, x))
+    sk.name = name
+    sk.isVisible = False
+    sp = [sk.modelToSketchSpace(P3.create(x * MM, y * MM, z * MM)) for y, z in outline]
+    L = sk.sketchCurves.sketchLines
+    first = prev = None
+    for i in range(len(sp)):
+        prev = L.addByTwoPoints(prev.endSketchPoint if prev else sp[0],
+                                first.startSketchPoint if i == len(sp) - 1 else sp[i + 1])
+        first = first or prev
+    ext = ctx.root.features.extrudeFeatures
+    for direction in (adsk.fusion.ExtentDirections.PositiveExtentDirection,
+                      adsk.fusion.ExtentDirections.NegativeExtentDirection):
+        before = body.boundingBox.maxPoint.x
+        ei = ext.createInput(sk.profiles.item(0), adsk.fusion.FeatureOperations.JoinFeatureOperation)
+        ei.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(VI.createByReal(dist * MM)), direction)
+        ei.participantBodies = [body]
+        f = ext.add(ei)
+        if body.boundingBox.maxPoint.x > before + 1e-6:
+            f.name = name
+            return f
+        f.deleteMe()
+    raise RuntimeError(name + ': could not extrude outward')
+
+
 def rounded_rect_pts(yc, z0, wy, hz, r_top, r_bot, n=8):
     """Outline (y, z) of a rectangle with rounded corners; flat bottom edge sits on z0."""
     pts = []
@@ -355,66 +394,25 @@ def rounded_rect_pts(yc, z0, wy, hz, r_top, r_bot, n=8):
     return pts
 
 
-def build_knob_pad(ctx, lbl, knob, kx, yc):
-    """Rounded thumb pad (flat bottom for printing) with a bevelled outer edge; optional 3 x 3 grip bumps."""
+def build_knob(ctx, lbl, g, cx):
+    """Slider knob at rest: T-head and arm under the floor, tab in the wall window, grip plate and thumb rib
+    outside. Every part starts at KNOB_Z0, so it prints flat on that face."""
+    new = adsk.fusion.FeatureOperations.NewBodyFeatureOperation
     join = adsk.fusion.FeatureOperations.JoinFeatureOperation
-    pl = yz_plane(ctx, kx)
-    sk = ctx.root.sketches.add(pl)
-    sk.name = lbl + ' Knob Pad'
-    sk.isVisible = False
-    outline = rounded_rect_pts(yc, ARM_Z0, KNOB_W, KNOB_H, KNOB_W / 2 - 1.0, 1.5)
-    L = sk.sketchCurves.sketchLines
-    sp = [sk.modelToSketchSpace(P3.create(kx * MM, y * MM, z * MM)) for y, z in outline]
-    first = prev = None
-    for i in range(len(sp)):
-        a = prev.endSketchPoint if prev else sp[0]
-        b = first.startSketchPoint if i == len(sp) - 1 else sp[i + 1]
-        prev = L.addByTwoPoints(a, b)
-        first = first or prev
-    ext = ctx.root.features.extrudeFeatures
-
-    def outward(prof, dist, taper, name):
-        for direction in (adsk.fusion.ExtentDirections.PositiveExtentDirection,
-                          adsk.fusion.ExtentDirections.NegativeExtentDirection):
-            before = knob.boundingBox.maxPoint.x
-            ei = ext.createInput(prof, join)
-            ei.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(VI.createByReal(dist * MM)), direction,
-                                VI.createByString('%g deg' % taper))
-            ei.participantBodies = [knob]
-            f = ext.add(ei)
-            if knob.boundingBox.maxPoint.x > before + 1e-6:
-                f.name = name
-                return f
-            f.deleteMe()
-        raise RuntimeError(name + ': could not extrude outward')
-
-    outward(sk.profiles.item(0), KNOB_T - KNOB_BEVEL, 0, lbl + ' Knob Pad')
-    # bevel: continue from the pad face, tapering in
-    face = max((f for f in knob.faces if f.geometry.surfaceType == adsk.core.SurfaceTypes.PlaneSurfaceType
-                and f.evaluator.getNormalAtPoint(f.pointOnFace)[1].x > 0.99), key=lambda f: f.pointOnFace.x)
-    skb = ctx.root.sketches.add(face)
-    skb.isVisible = False
-    outward(skb.profiles.item(0), KNOB_BEVEL, -40, lbl + ' Knob Bevel')
-    if not KNOB_BUMPS:
-        return
-    # grip bumps on the outer face
-    face = max((f for f in knob.faces if f.geometry.surfaceType == adsk.core.SurfaceTypes.PlaneSurfaceType
-                and f.evaluator.getNormalAtPoint(f.pointOnFace)[1].x > 0.99), key=lambda f: f.pointOnFace.x)
-    skg = ctx.root.sketches.add(face)
-    skg.isVisible = False
-    xf = face.pointOnFace.x / MM
-    zc = ARM_Z0 + KNOB_H / 2
-    for dy in (-1, 0, 1):
-        for dz in (-1, 0, 1):
-            c = skg.modelToSketchSpace(P3.create(xf * MM, (yc + dy * KNOB_BUMP_P) * MM, (zc + dz * KNOB_BUMP_P) * MM))
-            skg.sketchCurves.sketchCircles.addByCenterRadius(c, KNOB_BUMP_R * MM)
-    profs = adsk.core.ObjectCollection.create()
-    for p_ in skg.profiles:
-        if p_.areaProperties().area < 0.05:            # just the bump circles (cm2), not the face outline
-            profs.add(p_)
-    if profs.count != 9:
-        raise RuntimeError('expected 9 bump profiles, got %d' % profs.count)
-    outward(profs, KNOB_BUMP_H, KNOB_BUMP_TAPER, lbl + ' Knob Bumps')
+    x_pw, x_ow = cx + g['pw'] / 2, cx + g['W'] / 2
+    yk, z0 = g['y_k'], KNOB_Z0
+    x_head = g['xg'] + SLED_W / 2 - NECK_X - T_CLR     # outer face of the T-head
+    knob = box(ctx, lbl + ' Knob Tab', x_pw - 0.01, x_ow + GRIP_GAP + 0.01, yk - TAB_L / 2, yk + TAB_L / 2,
+               z0, z0 + TAB_H, new).bodies.item(0)
+    knob.name = lbl + ' Dispenser Knob'
+    box(ctx, lbl + ' Knob Arm', x_head - 0.01, x_pw + 0.01, yk - ARM_W / 2, yk + ARM_W / 2, z0, z0 + ARM_T, join, knob)
+    box(ctx, lbl + ' Knob Head', x_head - HEAD_L, x_head, yk - HEAD_W / 2, yk + HEAD_W / 2, z0, z0 + ARM_T, join, knob)
+    x_g = x_ow + GRIP_GAP
+    yz_extrude(ctx, knob, x_g, rounded_rect_pts(yk, z0, GRIP_L, GRIP_H, 3.0, 1.0), GRIP_T, lbl + ' Knob Grip')
+    rib_y = yk + GRIP_L / 2 - 1.0 - RIB_W / 2          # back edge, clear of the grip's rounded corner
+    yz_extrude(ctx, knob, x_g + GRIP_T - 0.01, rounded_rect_pts(rib_y, z0, RIB_W, GRIP_H - 3.5, RIB_W / 2, 0.3),
+               RIB_T + 0.01, lbl + ' Knob Rib')
+    return knob
 
 
 def build_mechanism(ctx, lbl, w, h, cx, cy, spring=None, with_knob=True):
@@ -428,8 +426,10 @@ def build_mechanism(ctx, lbl, w, h, cx, cy, spring=None, with_knob=True):
     sled = box(ctx, lbl + ' Sled', xa, xb, g['y_sf'], g['y_sb'], g['z_gb'], g['z_gb'] + SLED_H, new).bodies.item(0)
     sled.name = lbl + (' Dispenser Sled' if with_knob else ' Test Sled %s' % spring)
     box(ctx, lbl + ' Blade', xa, xb, g['y_sb'] - BLADE_T, g['y_sb'], g['z_gb'], FLOOR + BLADE_UP, join, sled)
-    box(ctx, lbl + ' Arm Socket', xb - 4.0, xb + 0.1, g['y_a0'] - 1.65, g['y_a0'] + 1.65,
-        g['z_gb'] + 0.5, g['z_gb'] + SLED_H + 0.1, cut, sled)
+    # T-slot through the sled: the knob's head drops into it as the sled goes into the groove
+    for part, x0_, x1_, hw in ((' Knob Neck', xb - NECK_X, xb + 0.1, ARM_W / 2 + T_CLR),
+                               (' Knob Pocket', xb - NECK_X - HEAD_L - 2 * T_CLR, xb - NECK_X, HEAD_W / 2 + T_CLR)):
+        box(ctx, lbl + part, x0_, x1_, g['y_k'] - hw, g['y_k'] + hw, g['z_gb'] - 0.1, g['z_gb'] + SLED_H + 0.1, cut, sled)
     # Meander spring with no thin necks: a rigid full-width header on the sled front, then round U-bends
     # and flexible bars, ending in a U-bend into a rigid full-width seat pad (drawn with preload).
     r, b, n = sp['pitch'] / 2, sp['beam'], sp['segs']
@@ -456,14 +456,7 @@ def build_mechanism(ctx, lbl, w, h, cx, cy, spring=None, with_knob=True):
         g['z_gb'], g['z_gb'] + SPRING_H, join, sled)
     if not with_knob:
         return sled, None, g
-    # knob: tongue into the sled socket, arm through the wall window, rounded thumb pad with grip bumps
-    kx = cx + g['W'] / 2 + 1.0
-    knob = box(ctx, lbl + ' Knob Arm', xb, kx + 0.5, g['y_a0'] - ARM_W / 2, g['y_a0'] + ARM_W / 2,
-               ARM_Z0, ARM_Z0 + ARM_H, new).bodies.item(0)
-    knob.name = lbl + ' Dispenser Knob'
-    box(ctx, lbl + ' Knob Tongue', xb - 3.5, xb + 0.01, g['y_a0'] - 1.5, g['y_a0'] + 1.5,
-        ARM_Z0, ARM_Z0 + ARM_H, join, knob)
-    build_knob_pad(ctx, lbl, knob, kx, g['y_a0'])
+    knob = build_knob(ctx, lbl, g, cx)
     return sled, knob, g
 
 

@@ -19,3 +19,6 @@ reports/
 
 # G-code is printer-specific and stays local; shared jobs are Bambu projects in exports/bambu_projects/
 exports/sliced/
+
+# Fusion archives embed account identifiers (hub ID) and stray memory; designs live in the Fusion cloud
+*.f3d

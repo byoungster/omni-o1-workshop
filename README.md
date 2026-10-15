@@ -18,7 +18,7 @@ versioned settings, and LAN control of a Bambu Lab P1S.
 | `exports/storage_side_dispenser/` | 3MF models of the 2R side-dispenser tray, lid, spring sled and knob |
 | `exports/o1_jigs/` | 3MF tiles of batch jigs and the registration frame for the xTool O1 Omni flat bed (small 330×122 and large 330×420 plates) |
 | `exports/bambu_projects/` | Bambu Studio projects: plates laid out with the settings used here, no G-code (see below) |
-| `cad/` | Editable designs: Fusion archives (`.f3d`, full timeline) and STEP for other CAD programs |
+| `cad/` | Editable designs as STEP, which opens in Fusion and any other CAD program |
 | `fusion/` | Fusion API scripts that generate every design from parameters |
 | `slicer/` | Bambu Studio CLI pipeline, slicing recipes, P1S LAN control, and an MCP server for Claude |
 | `docs/images/` | Renders |
@@ -65,13 +65,20 @@ Thin sheets bow more as they get bigger, so 1 mm is best suited to the smaller s
 *Renders show the earlier version without the dispenser slot.*
 
 **Side dispenser (prototype, 2R):** `exports/storage_side_dispenser/` adds a sled in a floor groove and a
-rounded, bevelled knob on the right side. Slide the knob forward 15 mm and the sled's 0.7 mm blade
+low-profile slider knob set into the right wall. Slide the knob forward 15 mm and the sled's 0.7 mm blade
 pushes only the bottom blank about 10 mm out of the front slot; a short serpentine spring with round U-bends
-returns it. The spring has no thin necks: it grows out of a rigid full-width header on the sled through a
-U-bend and ends in a U-bend into a rigid seat pad. Three test sleds fit the same tray so you can compare springs
-by feel: A (11 bars x 0.8 mm, ~0.8% bar strain, the main one), B (9 x 0.8 mm, ~1.0%) and C (7 x 1.2 mm, ~1.8%). Bar strain is roughly
-3 x thickness x deflection / length^2, so thin bars and more of them last longer; thick, short springs are
-stiffer but wear sooner. PETG lasts longer than PLA. Checked in CAD for rest fit, the full stroke, and stacking.
+returns it.
+- **Knob:** its tab rides in a window through the wall, so the wall guides it. Outside there's only a thin grip
+  plate with a thumb rib, about 3 mm proud. An arm runs under the floor to a T-head. Fit the knob through the
+  window first, then drop the sled in: a T-slot through the sled closes around the head, so the knob can't fall
+  out or pull free. (The first knob hung 7 mm off the wall on a loose tongue and tipped out of the sled.)
+- **Slot:** 1.9 mm under a 3 mm strip, printed with reduced bridge flow so the 65 mm span sags less. Still
+  under 2 mm, so the blank above stays put.
+- **Spring:** no thin necks. It grows out of a rigid full-width header on the sled through a U-bend and ends in a
+  U-bend into a rigid seat pad. Spring C (7 bars x 1.2 mm) won a hand test against two thinner, longer
+  springs. Bar strain is roughly 3 x thickness x deflection / length^2, so thin bars and more of them last
+  longer; thick, short springs are stiffer but wear sooner. PETG lasts longer than PLA.
+- Checked in CAD for rest fit, the full stroke, stacking, knob capture and the assembly path.
 
 ![Front of a tray with stock ticks](docs/images/tray-front-stock-ticks.png)
 
@@ -88,6 +95,8 @@ stiffer but wear sooner. PETG lasts longer than PLA. Checked in CAD for rest fit
     wood-fill or marble PLA. Fuzzy skin also roughens the slot, so Rustic stands have a 1.8 mm slot.
 - **Print a test comb first** (1.2–1.6 mm, or 1.6–2.4 mm for Rustic). Find the slot that holds your printed blank
   snugly and set `SLOT_W` / `SLOT_W_RUSTIC` in `fusion/photo_stands.py`.
+- UV prints with raised texture are thicker than a plain blank (1 mm of texture makes a 2 mm plaque). Use the
+  **Textured comb** (2.2–3.4 mm) to find their slot.
 - Print upright as exported, no supports. Matte PLA hides layer lines.
 
 ![Fluted stand](docs/images/stand-fluted.png)
@@ -135,8 +144,8 @@ Studio, check the printer, filament and plate, slice, and print. The settings co
 |---|---|---|---|---|
 | `Photo blanks 2R-8R 1mm` | 3 | ~3.2 h | ~170 g | Smooth PEI |
 | `Storage trays and lids 2R-8R` | 8 | ~18 h | ~960 g | Textured PEI |
-| `Side dispenser 2R set X1C` (tray, lid, spring sled, knob) | 1 | ~81 min | ~62 g | Textured PEI |
-| `Slot test comb` / `Slot test comb Rustic` | 1 each | ~30 min | ~17 g | Textured PEI |
+| `Side dispenser 2R set X1C` (tray, lid, spring sled, knob) | 1 | ~80 min | ~62 g | Textured PEI |
+| `Slot test comb` / `Slot test comb Rustic` / `Slot test comb Textured` | 1 each | ~30 min | ~17 g | Textured PEI |
 | `Photo stands Minimal / Fluted / Rustic 2R-8R` | 1 each | ~3.9 / 4.7 / 4.9 h | ~225 g | Textured PEI |
 | `O1 Small jig <size>` (2R x4, 3R x2, 4R x2) | 1 each | ~1.2 h | ~55-65 g | Textured PEI, matte black |
 | `O1 Large jig <size>` (2R-8R) | 3-4 each | ~3.5-4 h | ~160-205 g | Textured PEI, matte black |
@@ -160,8 +169,9 @@ connected to Fusion's built-in MCP server.
 - `o1_frame.py` builds one half of the small-plate registration frame (print two), with a fit check against a
   stand-in plate and jig.
 
-To edit a design without running scripts, open its `.f3d` from `cad/` in Fusion (File → Open → Open from my
-computer). It keeps the full timeline. The STEP files open in any CAD program as plain solids.
+The scripts are the parametric source: change a parameter and rerun them to get the design with its full
+timeline. To edit a solid directly, open its STEP file from `cad/` in Fusion or any other CAD program.
+Fusion archives (`.f3d`) are not published, because Fusion embeds account details in them.
 
 ## Slicing pipeline and MCP server
 

@@ -9,6 +9,7 @@ Three styles share the same footprint:
   Fluted  - vertical ribs across the front face (photo_stands recipe)
   Rustic  - minimal geometry printed with fuzzy skin (photo_stands_rustic recipe); fuzzy skin also
             roughens the slot walls, so it gets a wider slot and its own test comb.
+UV prints with raised texture are thicker than a plain blank; the Textured comb (2.2-3.4 mm) finds their slot.
 Always builds into a new document, so it never touches an open design.
 """
 import math
@@ -24,6 +25,8 @@ SLOT_W = 1.4                        # 0.2 mm clearance per side; confirm with th
 COMB_WIDTHS = (1.2, 1.3, 1.4, 1.5, 1.6)
 SLOT_W_RUSTIC = 1.8                 # fuzzy skin eats into the slot; confirm with the rustic comb
 COMB_WIDTHS_RUSTIC = (1.6, 1.8, 2.0, 2.2, 2.4)
+# UV prints with raised texture add 1 mm or more on top of the 1 mm blank: pick their slot with this comb
+COMB_WIDTHS_TEXTURED = (2.2, 2.5, 2.8, 3.1, 3.4)
 FLUTE_R = 1.5                       # fluted style: groove radius
 FLUTE_PITCH = 5.0                   # groove spacing along the front face
 STYLES = ('Minimal', 'Fluted', 'Rustic')
@@ -211,6 +214,7 @@ def run(_context: str):
         for lbl, us, w, h in SIZES:
             build_stand(root, lbl, us, w, h, x, y0, style)
             x += depth_for(h) + GAP
+    build_comb(root, 0.0, COMB_WIDTHS_TEXTURED, len(STYLES) * row, ' Textured')
     for b in root.bRepBodies:
         bb = b.boundingBox
         print('%-32s %6.1f x %6.1f x %5.1f mm' % (

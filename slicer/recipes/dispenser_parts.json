@@ -7,11 +7,13 @@
   "ams_color": "000000",
   "overrides": {
     "process": {
-      "wall_loops": "3"
+      "wall_loops": "3",
+      "bridge_flow": "0.85"
     }
   },
   "changelog": [
     "2026-10-14  created for the X1C: black PLA Matte (AMS slot 1; slot 0 is black PETG), textured PEI",
-    "2026-10-14  note: spring bars are 0.8 mm = two perimeter lines; print the winning sled in PETG later"
+    "2026-10-14  note: spring bars are 0.8 mm = two perimeter lines; print the winning sled in PETG later",
+    "2026-10-14  process.bridge_flow: (preset default) -> 0.85  (v1 tray: 65 mm slot lintel sagged and pinched blanks; thinner, tighter bridge strands droop less)"
   ]
 }

@@ -11,6 +11,7 @@
   },
   "changelog": [
     "2026-10-13  created; matte PLA hides layer lines (research: reads as premium on Etsy)",
-    "2026-10-13  process.wall_loops: 2 -> 3  (stiffer walls either side of the 1.4 mm slot)"
+    "2026-10-13  process.wall_loops: 2 -> 3  (stiffer walls either side of the 1.4 mm slot)",
+    "2026-10-15  stand models now use a 3.1 mm slot for textured UV prints (user picked it from 2.5/2.8/3.1 test stands); no slicer setting changed"
   ]
 }

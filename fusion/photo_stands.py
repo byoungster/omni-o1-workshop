@@ -21,7 +21,9 @@ P3 = adsk.core.Point3D
 MM = 0.1  # Fusion API lengths are cm
 
 PLAQUE_T = 1.0
-SLOT_W = 1.4                        # 0.2 mm clearance per side; confirm with the test comb
+SLOT_W = 3.1                        # textured UV prints (1 mm blank + raised resin): picked from the 2.5/2.8/3.1
+                                    # test stands on 2026-10-15, leaves room for thicker resin layers.
+                                    # Use 1.4 for plain 1 mm blanks (confirm with the plain test comb)
 COMB_WIDTHS = (1.2, 1.3, 1.4, 1.5, 1.6)
 # Rustic slots have end walls, so in every layer the slot is an enclosed hole and contour-only fuzzy skin
 # leaves it smooth: the slot keeps the plain width. (The rustic comb is only needed with "all walls" fuzzy skin.)

@@ -107,10 +107,11 @@ jammed: it was pushed 11 mm off the sled's line with nothing to stop it twisting
   - **Rustic**: the minimal shape printed with fuzzy skin (Perlin noise) on the outside for a stone or
     weathered look; best in wood-fill or marble PLA. Its slot has end walls, so the slicer treats it as a hole
     and contour-only fuzzy skin leaves it smooth at the plain width.
-- **Print a test comb first** (1.2–1.6 mm). Find the slot that holds your printed blank snugly and set `SLOT_W`
-  in `fusion/photo_stands.py`. The Rustic comb (1.6–2.4 mm) is only needed if you fuzz every wall.
-- UV prints with raised texture are thicker than a plain blank (1 mm of texture makes a 2 mm plaque). Use the
-  **Textured comb** (2.2–3.4 mm) to find their slot.
+- **Slot width: 3.1 mm**, for UV prints with raised resin texture. A 1 mm blank plus 1 mm or more of texture is
+  2 mm+. Of the 2.5, 2.8 and 3.1 mm test stands, all held the prints, and 3.1 leaves room for thicker resin layers.
+- For plain 1 mm blanks, set `SLOT_W = 1.4` in `fusion/photo_stands.py`, checked with the plain test comb
+  (1.2–1.6 mm). The Textured comb (2.2–3.4 mm) and test stands are there to re-check other textures. The Rustic
+  comb is only needed if you fuzz every wall.
 - Print upright as exported, no supports. Matte PLA hides layer lines.
 
 ![Fluted stand](docs/images/stand-fluted.png)

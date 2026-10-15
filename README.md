@@ -163,8 +163,15 @@ its product page calls them standard and large. By size:
   The plate figures (344 × 128 mm top face, R4 corners) come from published third-party fits, since xTool only
   gives the print area. The large-plate frame waits on a measurement of that plate's depth.
 
+- **Corner locators (large plate):** four corner pieces, all printed on one 256 mm bed. Each hugs a corner of the
+  330 × 420 plate, and their lips form a window the size of the print area plus 0.3 mm, so a jig or a
+  330 × 420 acrylic sheet drops in square.
+  - Two pieces carry the mat-tab relief: front-left, and rear-right (the same part turned 180°).
+  - Corners also keep clear of the plate's mid-edge latch.
+  - The plate's depth is quoted as 426 or ~434 mm. Check it and set `PLATE_D` in `fusion/o1_frame_large.py`.
+
 `fusion/o1_jigs.py` generates jigs for any flat rectangular item: add a line to `ITEMS`. `fusion/o1_frame.py`
-builds the registration frame.
+builds the small-plate frame, and `fusion/o1_frame_large.py` the large-plate corners.
 
 ## Printing on Bambu Lab printers
 

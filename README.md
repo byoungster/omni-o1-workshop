@@ -80,6 +80,19 @@ returns it.
   longer; thick, short springs are stiffer but wear sooner. PETG lasts longer than PLA.
 - Checked in CAD for rest fit, the full stroke, stacking, knob capture and the assembly path.
 
+**Button dispenser (v4, in test):** `exports/storage_button_dispenser/` replaces the side slider, which still
+jammed: it was pushed 11 mm off the sled's line with nothing to stop it twisting.
+- **How it works:** press a button on the right wall 5 mm and a bell-crank lever under the floor turns it into the
+  sled's 15 mm (3:1). The parts meet only at a pivot and at pins in slots, so nothing is pushed off its own axis.
+- **Layout:** the button runs in a closed tunnel through the wall. The lever lies above it in an open pocket under
+  the blanks, with pins reaching down into the button and into an ear on the sled. The floor is 2.5 mm higher to
+  stack all this.
+- **Assembly:** push the button in from outside, drop the sled in (compressing its spring 5.5 mm), then lay the
+  lever on its post. The lever's pin keeps the button in, and the blanks keep the lever down.
+- **Spring D:** 0.3 N at rest and 1.1 N at full stroke, at 0.8% bar strain. Print the moving parts in PETG, which
+  rubs with less friction and creeps less.
+- **Test coupon:** the tray cut 15 mm high. It keeps the whole mechanism and holds a few blanks.
+
 ![Front of a tray with stock ticks](docs/images/tray-front-stock-ticks.png)
 
 ## Photo stands

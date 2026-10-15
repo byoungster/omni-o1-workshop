@@ -1,0 +1,17 @@
+{
+  "description": "Moving dispenser parts (sled with printed spring, lever, button) in black PETG on textured PEI: lower self-friction and less creep than PLA (research 2026-10-15).",
+  "machine": "Bambu Lab X1 Carbon 0.4 nozzle",
+  "process": "0.20mm Standard @BBL X1C",
+  "filament": "Bambu PETG Basic @BBL X1C",
+  "bed_type": "Textured PEI Plate",
+  "ams_color": "000000",
+  "overrides": {
+    "process": {
+      "wall_loops": "3",
+      "bridge_flow": "0.85"
+    }
+  },
+  "changelog": [
+    "2026-10-15  created from dispenser_parts: PETG Basic for the button dispenser moving parts (AMS slot 0 holds black PETG)"
+  ]
+}

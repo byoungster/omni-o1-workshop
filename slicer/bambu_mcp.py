@@ -115,6 +115,14 @@ def slice(recipe: str, models: list[str], job: str | None = None, bed_type: str 
 
 
 @server.tool()
+def export_project(recipe: str, models: list[str], job: str | None = None, bed_type: str | None = None,
+                   printer: str | None = None) -> dict:
+    """Write a shareable Bambu Studio project (.3mf) to exports/bambu_projects: the recipe's settings and
+    auto-arranged plates, no G-code. Use this, not slice output, for anything published to GitHub."""
+    return bs.export_project(recipe, models, job, bed_type=bed_type, printer=printer)
+
+
+@server.tool()
 def open_in_bambu_studio(path: str) -> str:
     """Open a 3MF / .gcode.3mf in the Bambu Studio GUI on this PC."""
     if not os.path.isfile(path):

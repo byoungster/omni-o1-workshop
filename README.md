@@ -15,9 +15,11 @@ versioned settings, and LAN control of a Bambu Lab P1S.
 | `exports/blanks_1mm/` | 3MF models of the 11 standard photo sizes, plain 1 mm (no label) |
 | `exports/storage_trays/` | 3MF models of stackable trays and lids (20 blanks each) for 2R to 8R |
 | `exports/photo_stands/` | 3MF models of 15° slot stands in three styles (Minimal, Fluted, Rustic), plus slot-width test combs |
-| `exports/o1_jigs/` | 3MF tiles of batch jigs for the xTool O1 Omni flat bed (small 330×122 and large 330×420 plates) |
-| `exports/sliced/` | Print-ready `.gcode.3mf` files for a Bambu Lab P1S (0.4 nozzle), with plate previews |
-| `fusion/` | Fusion API scripts that generate the blanks and trays from parameters |
+| `exports/storage_side_dispenser/` | 3MF models of the 2R side-dispenser tray, lid, spring sled and knob |
+| `exports/o1_jigs/` | 3MF tiles of batch jigs and the registration frame for the xTool O1 Omni flat bed (small 330×122 and large 330×420 plates) |
+| `exports/bambu_projects/` | Bambu Studio projects: plates laid out with the settings used here, no G-code (see below) |
+| `cad/` | Editable designs: Fusion archives (`.f3d`, full timeline) and STEP for other CAD programs |
+| `fusion/` | Fusion API scripts that generate every design from parameters |
 | `slicer/` | Bambu Studio CLI pipeline, slicing recipes, P1S LAN control, and an MCP server for Claude |
 | `docs/images/` | Renders |
 
@@ -122,23 +124,27 @@ its product page calls them standard and large. By size:
 `fusion/o1_jigs.py` generates jigs for any flat rectangular item: add a line to `ITEMS`. `fusion/o1_frame.py`
 builds the registration frame.
 
-## Printing on a Bambu Lab P1S
+## Printing on Bambu Lab printers
 
-| File | Plates | Time | PLA | Build plate |
+The repo ships **Bambu Studio project files, not G-code**. G-code is specific to one printer, nozzle and
+plate, and a file sliced for someone else's setup can crash a nozzle or cook a bed. A project file carries the
+models laid out on plates plus the settings used here (presets, overrides, gyroid infill). Open it in Bambu
+Studio, check the printer, filament and plate, slice, and print. The settings come from `slicer/recipes/`.
+
+| Project in `exports/bambu_projects/` | Plates | Time | PLA | Build plate |
 |---|---|---|---|---|
-| `Photo blanks 2R-8R 1mm.gcode.3mf` | 3 | ~3.2 h | ~170 g | Smooth PEI |
-| `Storage trays _ lids.gcode.3mf` | 9 | ~18.4 h | ~958 g | Textured PEI |
-| `Dispenser 2R tray smooth PEI.gcode.3mf` (rear push) | 1 | ~49 min | ~36 g | Smooth PEI |
-| `Side dispenser 2R prototype.gcode.3mf` (tray, sleds A/B/C, knob) | 1 | ~65 min | ~45 g | Smooth PEI |
-| `X1C 2R side dispenser set _spring C_.gcode.3mf` (X1 Carbon: tray, lid, sled, knob) | 1 | ~81 min | ~62 g | Textured PEI |
-| `Slot test comb.gcode.3mf` / `Slot test comb Rustic.gcode.3mf` | 1 each | ~30 min | ~17 g | Textured PEI |
-| `Photo stands Minimal / Fluted / Rustic 2R-8R.gcode.3mf` | 1 each | ~3.9 / 4.7 / 4.9 h | ~225 g | Textured PEI |
-| `O1 Small jig <size>.gcode.3mf` (2R, 3R, 4R) | 1 each | ~1.2 h | ~55-65 g | Textured PEI, matte black |
-| `O1 Large jig <size>.gcode.3mf` (2R-8R) | 3-4 each | ~3.5-4 h | ~160-205 g | Textured PEI, matte black |
-| `O1 Small frame halves x2 smooth PEI.gcode.3mf` | 2 | ~25 min each | ~14 g each | Smooth or textured PEI, black |
+| `Photo blanks 2R-8R 1mm` | 3 | ~3.2 h | ~170 g | Smooth PEI |
+| `Storage trays and lids 2R-8R` | 8 | ~18 h | ~960 g | Textured PEI |
+| `Side dispenser 2R set X1C` (tray, lid, spring sled, knob) | 1 | ~81 min | ~62 g | Textured PEI |
+| `Slot test comb` / `Slot test comb Rustic` | 1 each | ~30 min | ~17 g | Textured PEI |
+| `Photo stands Minimal / Fluted / Rustic 2R-8R` | 1 each | ~3.9 / 4.7 / 4.9 h | ~225 g | Textured PEI |
+| `O1 Small jig <size>` (2R x4, 3R x2, 4R x2) | 1 each | ~1.2 h | ~55-65 g | Textured PEI, matte black |
+| `O1 Large jig <size>` (2R-8R) | 3-4 each | ~3.5-4 h | ~160-205 g | Textured PEI, matte black |
+| `O1 Small frame halves x2` | 2 | ~25 min each | ~14 g each | Smooth or textured PEI, black |
 
-Open the file in Bambu Studio and print plate by plate. For other printers, slice the 3MF models in
-`exports/` with your own profiles.
+Projects are set up for a P1S (or an X1 Carbon where named), 0.4 mm nozzle. Bambu Studio switches them to
+another Bambu printer when you change the printer. Times and weights are from the last slice here. For
+other slicers, use the 3MF models in `exports/` with your own profiles.
 
 ## Regenerating the models in Fusion
 
@@ -154,6 +160,9 @@ connected to Fusion's built-in MCP server.
 - `o1_frame.py` builds one half of the small-plate registration frame (print two), with a fit check against a
   stand-in plate and jig.
 
+To edit a design without running scripts, open its `.f3d` from `cad/` in Fusion (File → Open → Open from my
+computer). It keeps the full timeline. The STEP files open in any CAD program as plain solids.
+
 ## Slicing pipeline and MCP server
 
 `slicer/` slices from **recipes**: a recipe names three Bambu system presets (machine, process, filament)
@@ -166,7 +175,12 @@ pip install -r requirements.txt
 python bambu_slice.py slice photo_blanks_1mm "../exports/blanks_1mm/5R*.3mf" --job "5R test"
 python bambu_slice.py set photo_blanks_1mm process brim_type brim_ears "corners lifted on 8R"
 python bambu_slice.py result "5R test" ok "flat, clean photo face"
+python bambu_slice.py project photo_blanks_1mm "../exports/blanks_1mm/5R*.3mf" --job "5R blanks"
 ```
+
+`DEFAULTS` in `bambu_slice.py` applies pipeline-wide settings under every recipe (currently gyroid infill). A
+recipe that sets the same key wins. Sliced `.gcode.3mf` files go to `exports/sliced/`, which stays local
+(git-ignored). `project` writes the shareable version, with no G-code, to `exports/bambu_projects/`.
 
 **Bambu Studio CLI gotcha.** The CLI ignores `inherits` and `include` in preset files passed with
 `--load-settings`. It silently falls back to built-in defaults, so you get G-code **with no printer start

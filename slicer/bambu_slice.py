@@ -4,8 +4,13 @@ A recipe (recipes/<name>.json) names three Bambu system presets and overrides in
 settings on top of them. Changing a setting is a one-line, dated, diffable edit, and every slice
 and every print outcome is appended to journal.jsonl, so settings can be tuned against results.
 
+Sliced files (.gcode.3mf) stay on this PC: G-code is specific to one printer and setup. To share a job,
+export_project writes a Bambu Studio project (.3mf) with the same plates and settings but no G-code,
+which anyone can open, check and slice for their own printer.
+
 Usage:
   python bambu_slice.py slice <recipe> <model.3mf|glob> [...] [--job NAME] [--bed "High Temp Plate"] [--printer x1c]
+  python bambu_slice.py project <recipe> <model.3mf|glob> [...] [--job NAME] [--bed "High Temp Plate"] [--printer x1c]
   python bambu_slice.py set <recipe> <machine|process|filament> <key> <value> "<reason>"
   python bambu_slice.py result <job_id> <ok|warped|failed|...> "<notes>"
 """
@@ -27,10 +32,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 RECIPES = os.path.join(HERE, 'recipes')
 JOURNAL = os.path.join(HERE, 'journal.jsonl')
 CATALOG = os.path.join(HERE, 'settings_catalog.json')  # every key the slicer knows, from the last slice
-OUT = os.path.join(os.path.dirname(HERE), 'exports', 'sliced')
+OUT = os.path.join(os.path.dirname(HERE), 'exports', 'sliced')           # G-code, local only (git-ignored)
+PROJECTS = os.path.join(os.path.dirname(HERE), 'exports', 'bambu_projects')  # shareable project files
 BED_TYPES = ('Cool Plate', 'Engineering Plate', 'High Temp Plate', 'Textured PEI Plate', 'Supertack Plate')
 PRINTERS = {'p1s': 'Bambu Lab P1S 0.4 nozzle', 'x1c': 'Bambu Lab X1 Carbon 0.4 nozzle'}
 FILAMENT_TAGS = {'p1s': ('P1S 0.4 nozzle', 'P1S', 'X1C'), 'x1c': ('X1C', 'X1C 0.4 nozzle')}
+# Settings every recipe gets unless the recipe overrides them itself
+DEFAULTS = {'process': {'sparse_infill_pattern': 'gyroid'}}  # 2026-10-14: gyroid infill by default
 
 
 def for_printer(r, printer):
@@ -93,9 +101,15 @@ def set_setting(name, category, key, value, reason):
     return {'recipe': name, 'key': '%s.%s' % (category, key), 'old': old, 'new': new}
 
 
+def overrides(r):
+    """The recipe's own overrides on top of the pipeline DEFAULTS."""
+    own = r.get('overrides', {})
+    return {c: {**DEFAULTS.get(c, {}), **own.get(c, {})} for c in bp.CATEGORIES if DEFAULTS.get(c) or own.get(c)}
+
+
 def effective(name, category, key):
     r = load_recipe(name)
-    ov = r.get('overrides', {}).get(category, {})
+    ov = overrides(r).get(category, {})
     base = bp.resolve(category, r[category]).get(key)
     return {'preset': r[category], 'preset_value': base, 'override': ov.get(key), 'effective': ov.get(key, base)}
 
@@ -106,13 +120,13 @@ def search_settings(name, pattern):
     hits = []
     for cat in bp.CATEGORIES:
         cfg = bp.resolve(cat, r[cat])
-        ov = r.get('overrides', {}).get(cat, {})
+        ov = overrides(r).get(cat, {})
         for k in sorted(cfg):
             if re.search(pattern, k, re.I):
                 hits.append({'category': cat, 'key': k, 'preset_value': cfg[k], 'override': ov.get(k)})
     # Settings no preset defines (slicer built-in defaults, e.g. brim_type) are set via the process override
     known = {h['key'] for h in hits} | {k for cat in bp.CATEGORIES for k in bp.resolve(cat, r[cat])}
-    ov = r.get('overrides', {}).get('process', {})
+    ov = overrides(r).get('process', {})
     for k, v in sorted(_catalog().items()):
         if k not in known and re.search(pattern, k, re.I):
             hits.append({'category': 'process', 'key': k, 'preset_value': v, 'override': ov.get(k),
@@ -162,9 +176,8 @@ def _check_plate(gcode, printer_model, machine):
     return problems
 
 
-def slice_models(recipe, models, job=None, arrange=True, bed_type=None, printer=None):
-    """bed_type overrides the recipe's plate for this job (e.g. whatever plate is loaded right now);
-    printer ('p1s', 'x1c') retargets the recipe to that printer's machine and filament presets."""
+def _job(recipe, job, bed_type, printer):
+    """Recipe for one job, retargeted to a printer and plate if asked, plus a file-safe job name."""
     r = load_recipe(recipe)
     if printer:
         r = for_printer(r, printer)
@@ -172,25 +185,65 @@ def slice_models(recipe, models, job=None, arrange=True, bed_type=None, printer=
         if bed_type not in BED_TYPES:
             raise ValueError('bed_type must be one of %s' % (BED_TYPES,))
         r['bed_type'] = bed_type
-    models = _resolve_models(models)
     job = job or '%s %s' % (recipe, datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
-    job = re.sub(r'[^\w\- .]', '_', job)
-    os.makedirs(OUT, exist_ok=True)
-    ov = r.get('overrides', {})
+    return r, re.sub(r'[^\w\- .]', '_', job)
+
+
+def _settings_files(r, recipe, tmp):
+    """Fully resolved machine/process/filament settings files (the CLI ignores preset inheritance)."""
+    ov, files = overrides(r), {}
+    for cat in bp.CATEGORIES:
+        o = dict(ov.get(cat, {}))
+        if cat == 'process' and r.get('bed_type'):
+            o['curr_bed_type'] = r['bed_type']
+        name = None if cat == 'machine' else 'Omni %s (%s)' % (recipe, cat)
+        cfg = bp.build(cat, r[cat], o, name=name)
+        if cat != 'machine':
+            cfg['compatible_printers'] = [r['machine']]
+            cfg['compatible_printers_condition'] = ''
+        files[cat] = os.path.join(tmp, cat + '.json')
+        with open(files[cat], 'w', encoding='utf-8') as f:
+            json.dump(cfg, f)
+    return files
+
+
+def export_project(recipe, models, job=None, bed_type=None, printer=None):
+    """Bambu Studio project (.3mf) with the recipe's settings and auto-arranged plates, but no G-code.
+    Safe to share: it opens in Bambu Studio and is sliced there for whatever printer loads it."""
+    r, job = _job(recipe, job, bed_type, printer)
+    models = _resolve_models(models)
+    os.makedirs(PROJECTS, exist_ok=True)
+    out = os.path.join(PROJECTS, job + '.3mf')
     with tempfile.TemporaryDirectory(prefix='bambu_') as tmp:
-        files = {}
-        for cat in bp.CATEGORIES:
-            o = dict(ov.get(cat, {}))
-            if cat == 'process' and r.get('bed_type'):
-                o['curr_bed_type'] = r['bed_type']
-            name = None if cat == 'machine' else 'Omni %s (%s)' % (recipe, cat)
-            cfg = bp.build(cat, r[cat], o, name=name)
-            if cat != 'machine':
-                cfg['compatible_printers'] = [r['machine']]
-                cfg['compatible_printers_condition'] = ''
-            files[cat] = os.path.join(tmp, cat + '.json')
-            with open(files[cat], 'w', encoding='utf-8') as f:
-                json.dump(cfg, f)
+        files = _settings_files(r, recipe, tmp)
+        cmd = [STUDIO, '--arrange', '1', '--orient', '0',
+               '--load-settings', files['machine'] + ';' + files['process'],
+               '--load-filaments', files['filament'],
+               '--outputdir', tmp, '--export-3mf', job + '.3mf']
+        proc = subprocess.run(cmd + models, capture_output=True, text=True, timeout=1800)
+        made = os.path.join(tmp, job + '.3mf')
+        if not os.path.exists(made):
+            raise RuntimeError('project export failed (exit %s): %s' % (proc.returncode, proc.stdout[-500:]))
+        with zipfile.ZipFile(made) as z:
+            names = z.namelist()
+        gcode = [n for n in names if n.endswith('.gcode')]
+        if gcode:
+            raise RuntimeError('project unexpectedly contains G-code: %s' % gcode)
+        os.replace(made, out)
+    return {'project': out, 'recipe': recipe, 'printer': next((k for k, v in PRINTERS.items() if v == r['machine']), None),
+            'bed_type': r.get('bed_type'), 'models': [os.path.basename(m) for m in models],
+            'plates': len([n for n in names if re.match(r'Metadata/plate_\d+\.png$', n)]) or None}
+
+
+def slice_models(recipe, models, job=None, arrange=True, bed_type=None, printer=None):
+    """bed_type overrides the recipe's plate for this job (e.g. whatever plate is loaded right now);
+    printer ('p1s', 'x1c') retargets the recipe to that printer's machine and filament presets."""
+    r, job = _job(recipe, job, bed_type, printer)
+    models = _resolve_models(models)
+    os.makedirs(OUT, exist_ok=True)
+    ov = overrides(r)
+    with tempfile.TemporaryDirectory(prefix='bambu_') as tmp:
+        files = _settings_files(r, recipe, tmp)
         out_name = job + '.gcode.3mf'
         cmd = [STUDIO, '--slice', '0', '--orient', '0',
                '--load-settings', files['machine'] + ';' + files['process'],
@@ -277,10 +330,12 @@ def open_in_studio(path):
 
 if __name__ == '__main__':
     a = sys.argv[1:]
-    if a and a[0] == 'slice':
-        opt = lambda k: a[a.index(k) + 1] if k in a else None
-        flags = ('--job', '--bed', '--printer')
-        models = [x for i, x in enumerate(a[2:], 2) if x not in flags and a[i - 1] not in flags]
+    opt = lambda k: a[a.index(k) + 1] if k in a else None
+    flags = ('--job', '--bed', '--printer')
+    models = [x for i, x in enumerate(a[2:], 2) if x not in flags and a[i - 1] not in flags]
+    if a and a[0] == 'project':
+        print(json.dumps(export_project(a[1], models, opt('--job'), bed_type=opt('--bed'), printer=opt('--printer')), indent=1))
+    elif a and a[0] == 'slice':
         e = slice_models(a[1], models, opt('--job'), bed_type=opt('--bed'), printer=opt('--printer'))
         print(json.dumps({k: e[k] for k in ('job_id', 'output', 'total_minutes', 'total_grams', 'safe_to_print', 'problems')}, indent=1))
         for p in e['plates']:

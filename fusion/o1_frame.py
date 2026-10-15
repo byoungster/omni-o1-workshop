@@ -177,6 +177,7 @@ def fit_check(root, des, half):
     rrect(sk, AREA[0], AREA[1], 0)
     insert = extrude(root, sk, sk.profiles.item(0), 1.7, new, 'Fit check insert (330 x 122 x 1.7)').bodies.item(0)
     mat.name, plate.name = 'Fit check plate mat (344 x 128)', 'Fit check plate body (344 x 129.5)'
+    insert.name = 'Fit check insert (330 x 122 x 1.7)'
 
     ents = adsk.core.ObjectCollection.create()
     for b in (half, copy, mat, plate, insert):

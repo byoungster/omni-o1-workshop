@@ -16,3 +16,6 @@ reports/
 
 # Browser automation logs
 .playwright-mcp/
+
+# G-code is printer-specific and stays local; shared jobs are Bambu projects in exports/bambu_projects/
+exports/sliced/

@@ -7,8 +7,8 @@ comb first, find the slot width that holds your printed blanks snugly, then set 
 Three styles share the same footprint:
   Minimal - smooth, chamfered (print with the photo_stands recipe)
   Fluted  - vertical ribs across the front face (photo_stands recipe)
-  Rustic  - minimal geometry printed with fuzzy skin (photo_stands_rustic recipe); fuzzy skin also
-            roughens the slot walls, so it gets a wider slot and its own test comb.
+  Rustic  - minimal geometry printed with fuzzy skin on the outside only (photo_stands_rustic recipe): its
+            slot has end walls, so the slot stays smooth at the plain width.
 UV prints with raised texture are thicker than a plain blank; the Textured comb (2.2-3.4 mm) finds their slot.
 Always builds into a new document, so it never touches an open design.
 """
@@ -23,7 +23,11 @@ MM = 0.1  # Fusion API lengths are cm
 PLAQUE_T = 1.0
 SLOT_W = 1.4                        # 0.2 mm clearance per side; confirm with the test comb
 COMB_WIDTHS = (1.2, 1.3, 1.4, 1.5, 1.6)
-SLOT_W_RUSTIC = 1.8                 # fuzzy skin eats into the slot; confirm with the rustic comb
+# Rustic slots have end walls, so in every layer the slot is an enclosed hole and contour-only fuzzy skin
+# leaves it smooth: the slot keeps the plain width. (The rustic comb is only needed with "all walls" fuzzy skin.)
+CLOSED_SLOT = ('Rustic',)
+SLOT_END_CLR = 0.5                  # slot length = plaque width + this at each end
+SLOT_W_RUSTIC = SLOT_W
 COMB_WIDTHS_RUSTIC = (1.6, 1.8, 2.0, 2.2, 2.4)
 # UV prints with raised texture add 1 mm or more on top of the 1 mm blank: pick their slot with this comb
 COMB_WIDTHS_TEXTURED = (2.2, 2.5, 2.8, 3.1, 3.4)
@@ -145,11 +149,21 @@ def build_stand(root, lbl, us, w, h, x0, y0=0.0, style='Minimal'):
     sk = root.sketches.add(xz_plane(root, y0))
     sk.name = '%s %s Stand Profile' % (lbl, style)
     sk.isVisible = False
+    slot_w = SLOT_W_RUSTIC if style == 'Rustic' else SLOT_W
     polygon(sk, y0, profile_points(x0, depth))
-    polygon(sk, y0, slot_points(x0, SLOT_W_RUSTIC if style == 'Rustic' else SLOT_W))
+    if style not in CLOSED_SLOT:
+        polygon(sk, y0, slot_points(x0, slot_w))
     body = extrude_along_y(root, largest_profile(sk), length, adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
                            name='%s %s Stand' % (lbl, style)).bodies.item(0)
     body.name = '%s Stand %s (%s in)' % (lbl, style, us)
+    if style in CLOSED_SLOT:
+        slot_len = w + 2 * SLOT_END_CLR
+        ys = y0 + (length - slot_len) / 2
+        sks = root.sketches.add(xz_plane(root, ys))
+        sks.isVisible = False
+        polygon(sks, ys, slot_points(x0, slot_w))
+        extrude_along_y(root, largest_profile(sks), slot_len, adsk.fusion.FeatureOperations.CutFeatureOperation,
+                        body, name='%s %s closed slot' % (lbl, style))
     if style == 'Fluted':
         # vertical half-round grooves across the front face, stopping below the top chamfer
         skf = root.sketches.add(root.xYConstructionPlane)

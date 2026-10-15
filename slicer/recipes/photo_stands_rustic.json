@@ -1,5 +1,5 @@
 {
-  "description": "Rustic photo stands: fuzzy-skin (Perlin) texture for a stone / weathered look. Looks best in wood-fill or marble PLA. Uses the wider-slot Rustic models; calibrate with the Rustic test comb.",
+  "description": "Rustic photo stands: fuzzy-skin (Perlin) texture on the outside only, for a stone / weathered look. The Rustic models have closed-end slots, so contour-only fuzzy skin leaves the slot smooth at the plain width. Looks best in wood-fill or marble PLA.",
   "machine": "Bambu Lab P1S 0.4 nozzle",
   "process": "0.20mm Standard @BBL X1C",
   "filament": "Bambu PLA Matte @BBL P1S 0.4 nozzle",
@@ -16,6 +16,7 @@
   },
   "changelog": [
     "2026-10-13  created from photo_stands: fuzzy skin on outer walls, Perlin noise (organic stone texture rather than classic static)",
-    "2026-10-13  note: fuzzy skin also roughens the slot walls, hence the 1.8 mm Rustic slot and 1.6-2.4 mm Rustic comb"
+    "2026-10-13  note: fuzzy skin also roughens the slot walls, hence the 1.8 mm Rustic slot and 1.6-2.4 mm Rustic comb",
+    "2026-10-14  Rustic models now have closed-end slots: an enclosed hole in every layer, so fuzzy_skin=external (contour) skips it; slot back to the plain 1.4 mm (user: fuzzy everywhere but the blank cutout)"
   ]
 }

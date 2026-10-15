@@ -29,8 +29,10 @@ CLOSED_SLOT = ('Rustic',)
 SLOT_END_CLR = 0.5                  # slot length = plaque width + this at each end
 SLOT_W_RUSTIC = SLOT_W
 COMB_WIDTHS_RUSTIC = (1.6, 1.8, 2.0, 2.2, 2.4)
-# UV prints with raised texture add 1 mm or more on top of the 1 mm blank: pick their slot with this comb
+# UV prints with raised texture add 1 mm or more on top of the 1 mm blank: pick their slot with this comb,
+# or with real stands at these widths (2R Minimal, width labelled on the back)
 COMB_WIDTHS_TEXTURED = (2.2, 2.5, 2.8, 3.1, 3.4)
+TEXTURED_TEST_WIDTHS = (2.5, 2.8, 3.1)
 FLUTE_R = 1.5                       # fluted style: groove radius
 FLUTE_PITCH = 5.0                   # groove spacing along the front face
 STYLES = ('Minimal', 'Fluted', 'Rustic')
@@ -144,18 +146,21 @@ def largest_profile(sk):
     return max(sk.profiles, key=lambda p: p.areaProperties().area)
 
 
-def build_stand(root, lbl, us, w, h, x0, y0=0.0, style='Minimal'):
+def build_stand(root, lbl, us, w, h, x0, y0=0.0, style='Minimal', slot_w=None):
+    """A slot_w given here makes a textured-print test stand: its slot width goes in the name and the back label."""
     depth, length = depth_for(h), min(w + 6.0, MAX_LEN)
     sk = root.sketches.add(xz_plane(root, y0))
     sk.name = '%s %s Stand Profile' % (lbl, style)
     sk.isVisible = False
-    slot_w = SLOT_W_RUSTIC if style == 'Rustic' else SLOT_W
+    test_w = slot_w
+    slot_w = slot_w or (SLOT_W_RUSTIC if style == 'Rustic' else SLOT_W)
     polygon(sk, y0, profile_points(x0, depth))
     if style not in CLOSED_SLOT:
         polygon(sk, y0, slot_points(x0, slot_w))
     body = extrude_along_y(root, largest_profile(sk), length, adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
                            name='%s %s Stand' % (lbl, style)).bodies.item(0)
-    body.name = '%s Stand %s (%s in)' % (lbl, style, us)
+    body.name = ('%s Stand %s textured slot %.1f mm' % (lbl, style, test_w) if test_w
+                 else '%s Stand %s (%s in)' % (lbl, style, us))
     if style in CLOSED_SLOT:
         slot_len = w + 2 * SLOT_END_CLR
         ys = y0 + (length - slot_len) / 2
@@ -182,7 +187,8 @@ def build_stand(root, lbl, us, w, h, x0, y0=0.0, style='Minimal'):
                             adsk.fusion.ExtentDirections.PositiveExtentDirection)
         ei.participantBodies = [body]
         ext.add(ei).name = '%s Fluted grooves' % lbl
-    face_label(root, body, x0 + depth, us, 6.0, y0, y0 + length, (BASE_H - CHAMFER) / 2 - 3.0)
+    face_label(root, body, x0 + depth, '%.1f' % test_w if test_w else us, 6.0, y0, y0 + length,
+               (BASE_H - CHAMFER) / 2 - 3.0)
     return body
 
 
@@ -229,6 +235,10 @@ def run(_context: str):
             build_stand(root, lbl, us, w, h, x, y0, style)
             x += depth_for(h) + GAP
     build_comb(root, 0.0, COMB_WIDTHS_TEXTURED, len(STYLES) * row, ' Textured')
+    x = depth_for(89) + GAP
+    for wdt in TEXTURED_TEST_WIDTHS:             # 2R test stands for textured UV prints
+        build_stand(root, '2R', '2.5x3.5', 64, 89, x, len(STYLES) * row, 'Minimal', slot_w=wdt)
+        x += depth_for(89) + GAP
     for b in root.bRepBodies:
         bb = b.boundingBox
         print('%-32s %6.1f x %6.1f x %5.1f mm' % (

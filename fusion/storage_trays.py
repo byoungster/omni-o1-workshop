@@ -34,7 +34,9 @@ LINTEL = 3.0      # solid strip above the slot: bridges side wall to side wall a
 # wall (a short flat ledge, then a 45 degree underside) that holds back every blank but the bottom one by its
 # corners. Nothing spans the opening, so nothing sags or strings. (The 65 mm slot bridge always drooped and
 # left strings that caught the blank, even at 1.9 mm with reduced bridge flow.)
-FRONT_GAP = 1.5       # gap under the stops: one 1 mm blank passes, the next one's corners are caught
+FRONT_GAP = 2.0       # gap under the stops as drawn. The flat ledge droops ~0.5 mm when printed, leaving ~1.5:
+                      # the bottom blank passes and the next is caught at mid-thickness (a drawn 1.5 printed
+                      # at ~1.0 and caught the first blank too; user, 2026-10-15)
 FRONT_STOP = 3.0      # flat part of each stop, from the side wall (a short overhang, no bridge)
 FRONT_STUB = 15.5     # each stop widens at 45 degrees to this, then runs straight up (room for the label)
 FLOOR = 1.6

@@ -156,19 +156,24 @@ its product page calls them standard and large. By size:
   between pockets where possible. Butt the tiles together on the plate (or glue them with CA).
 - Print in **matte black** PLA: plain and matte so the O1's scan picks out the white blanks.
 - Calibrate once: tape over the jig, print the template, measure the offset, correct it in xTool Studio.
-- **Registration frame (small plate):** two identical halves drop over the plate, one on each end (turn the
-  second half around). Skirts hug the end, the rounded R4 corners, and the front and back faces, so the frame
-  sits square and can't slide. Its window is the print area plus 0.3 mm, so any jig drops in at the same spot.
-  Swap jigs by lifting one out and dropping the next in. Tab reliefs clear the mat's pull tab either way round.
-  The plate figures (344 × 128 mm top face, R4 corners) come from published third-party fits, since xTool only
-  gives the print area. The large-plate frame waits on a measurement of that plate's depth.
+- **Registration frame (small plate):** two identical halves clip onto the plate, one on each end (turn the
+  second half around).
+  - **Grip:** skirts hug the end, the rounded R4 corners, and the front and back faces. A 2 mm hook under the
+    plate's end clamps the 7.5 mm end lip in an 8.2 mm slot, so a bump can't lift it off. The first sit-on version
+    fell off. Slide each half on from its end.
+  - **Window:** the print area plus 0.3 mm, so any jig drops in at the same spot. Swap jigs by lifting one out and
+    dropping the next in.
+  - **Tab reliefs:** a low slot under the ring clears the mat's pull tab (it sticks out 6–7 mm) either way round.
+  - **Print upright, as exported:** the hook stands on the print bed.
+  - **Plate figures:** 344 × 128 mm top face, R4 corners, 16.5 mm thick, and a handle cutout under each end that
+    leaves a 7.5 mm lip. These are measured, and they match published fits and photos.
 
-- **Corner locators (large plate):** four corner pieces, all printed on one 256 mm bed. Each hugs a corner of the
-  330 × 420 plate, and their lips form a window the size of the print area plus 0.3 mm, so a jig or a
-  330 × 420 acrylic sheet drops in square.
-  - Two pieces carry the mat-tab relief: front-left, and rear-right (the same part turned 180°).
-  - Corners also keep clear of the plate's mid-edge latch.
-  - The plate's depth is quoted as 426 or ~434 mm. Check it and set `PLATE_D` in `fusion/o1_frame_large.py`.
+- **Corner clips (large plate):** four corner clips, all printed on one 256 mm bed. Each wraps a corner of the
+  344 × 434 × 16.6 mm plate, with a lip 6 mm under it, so a bump can't lift it off. Their top lips form a window
+  the size of the 330 × 420 print area plus 0.3 mm, so a jig or a 330 × 420 acrylic sheet drops in square.
+  - Two clips carry the mat-tab relief: front-left, and rear-right (the same part turned 180°).
+  - The clips stay clear of the spring latches at the middle of both long sides.
+  - Slide each clip on from its corner, and print upright, as exported.
 
 `fusion/o1_jigs.py` generates jigs for any flat rectangular item: add a line to `ITEMS`. `fusion/o1_frame.py`
 builds the small-plate frame, and `fusion/o1_frame_large.py` the large-plate corners.

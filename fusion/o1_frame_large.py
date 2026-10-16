@@ -1,7 +1,9 @@
 """Corner locators for the xTool O1 Omni large plate (330 x 420 mm print area) (Autodesk Fusion API script).
 
-Four corner pieces drop over the plate's corners. Each hugs its corner with a skirt and a rounded corner, and
-a thin lip on the mat runs to the print area. Their inner edges form a window the size of the print area plus
+Four corner clips grip the plate's corners. Each wraps its corner edge: a skirt down the full edge, a rounded
+corner, a lip under the plate and a thin lip on the mat that runs to the print area. The lower lip stops the
+clip lifting off when bumped (the first, sit-on-top version fell off). Printed upright, as used, so the lower
+lip lies on the print bed (the same as Jig Generator's proven corner clips). Their inner edges form a window the size of the print area plus
 WIN_CLR, so a jig or an acrylic sheet cut to 330 x 420 drops in square. Corners rather than a full frame: four
 fit one 256 mm printer bed (a full frame round a ~344 x 434 plate would be about eight pieces), they stay clear
 of the plate's spring latch at mid-edge, and each one finds its own corner.
@@ -10,10 +12,10 @@ Two shapes, two of each: the front-left piece (turned 180 degrees it is the rear
 mat's pull tab, which sits on the right side near the rear and moves to the left front when the plate goes in
 the other way round; the front-right piece (turned, the rear-left) has none.
 
-Plate figures: xTool publishes only the print area. Width ~344 mm is well supported; depth is quoted as 426
-or ~434 mm, so PLATE_D must be checked on the real plate (it sets where the lips stop at the front and back).
-Built upside down for printing in the exported files; the design itself is shown as used. Always builds into
-a new document.
+Plate figures: 344 x 434 mm (xTool's mat drawings: 343 x 433 mat aligned to the plate edges), 16.6 mm thick at
+the corners (user's measurement), and a lip can reach up to 26 mm under a corner when the plate is installed.
+The spring latches sit at the middle of both long sides; the 70 mm corners stay clear. Always builds into a
+new document.
 """
 import math
 
@@ -25,16 +27,19 @@ MM = 0.1
 
 AREA = (330.0, 420.0)    # print area
 PLATE_W = 344.0          # plate top, left-right (third-party figures agree)
-PLATE_D = 434.0          # plate top, front-back: 426 or ~434 quoted, MEASURE
+PLATE_D = 434.0          # plate top, front-back (xTool mat drawing 433 + alignment)
 PLATE_R = 4.0            # corner radius (assumed same as the small plate)
 CLR = 0.4                # skirt clearance to the plate edge, all round
 WALL = 2.4               # skirt wall
-SKIRT_D = 6.0            # skirt depth down the plate edge
+PLATE_T = 16.6           # plate thickness at the corners (user's measurement)
+SLOT_CLR = 0.4           # slot = plate thickness + this
+UNDER_T, UNDER_IN = 2.0, 6.0   # lower lip under the plate: thickness, reach in from the skirt
+SKIRT_D = PLATE_T + SLOT_CLR   # skirt depth down the edge, to the top of the lower lip
 LIP_T = 1.6              # lip on the mat: under the 1.7 mm jigs and any acrylic sheet, so items stay highest
 WIN_CLR = 0.3            # window clearance round the insert, per side
 RELIEF_R = 1.0           # window corner relief
 LEG = 70.0               # each piece reaches this far along both edges from the corner
-TAB = (6.0, 32.0)        # mat-tab relief along the side edge, measured from the corner (both tab corners)
+TAB = (15.0, 45.0)       # mat-tab relief along the side edge, from the corner (tab at ~19-42, sticks out 6-7 mm)
 INSERT_T = 1.7           # stand-in insert thickness for the fit check
 
 
@@ -102,14 +107,19 @@ def build(root):
     """The whole ring as used (plate top at z = 0), then cut into its four corners."""
     new, cut = adsk.fusion.FeatureOperations.NewBodyFeatureOperation, adsk.fusion.FeatureOperations.CutFeatureOperation
     off = CLR + WALL
-    sk = sketch(root, -SKIRT_D, 'Large frame outline')
+    zb = -SKIRT_D - UNDER_T
+    sk = sketch(root, zb, 'Large frame outline')
     rrect(sk, PLATE_W + 2 * off, PLATE_D + 2 * off, PLATE_R + off)
-    ring = extrude(root, -SKIRT_D, outer_profile(sk), SKIRT_D + LIP_T, new, 'Large frame').bodies.item(0)
+    ring = extrude(root, zb, outer_profile(sk), SKIRT_D + UNDER_T + LIP_T, new, 'Large frame').bodies.item(0)
+    # lower lip: everything more than UNDER_IN inside the skirt is cut away under the plate
+    sk = sketch(root, zb, 'Large frame under-lip opening')
+    rrect(sk, PLATE_W + 2 * CLR - 2 * UNDER_IN, PLATE_D + 2 * CLR - 2 * UNDER_IN, PLATE_R)
+    extrude(root, zb, outer_profile(sk), UNDER_T, cut, 'Large frame under-lip opening', ring)
     sk = sketch(root, -SKIRT_D, 'Large frame plate pocket')
     rrect(sk, PLATE_W + 2 * CLR, PLATE_D + 2 * CLR, PLATE_R + CLR)
     extrude(root, -SKIRT_D, outer_profile(sk), SKIRT_D, cut, 'Large frame plate pocket', ring)
     wx, wy = AREA[0] / 2 + WIN_CLR, AREA[1] / 2 + WIN_CLR
-    sk = sketch(root, -SKIRT_D, 'Large frame window')
+    sk = sketch(root, 0, 'Large frame window')
     sk.sketchCurves.sketchLines.addTwoPointRectangle(P3.create(-wx * MM, -wy * MM, 0), P3.create(wx * MM, wy * MM, 0))
     for sx in (-1, 1):
         for sy in (-1, 1):
@@ -119,17 +129,18 @@ def build(root):
     for p in sk.profiles:
         if p.areaProperties().area < (2 * wx * 2 * wy + 10) * MM * MM:    # the window and its reliefs, not the ring
             profs.add(p)
-    extrude(root, -SKIRT_D, profs, SKIRT_D + LIP_T, cut, 'Large frame window', ring)
+    extrude(root, 0, profs, LIP_T, cut, 'Large frame window', ring)
     # mat-tab reliefs through the side wall at the rear-right and front-left corners
     xo, yo = PLATE_W / 2, PLATE_D / 2
     for sx, sy in ((1, 1), (-1, -1)):
         y0, y1 = sorted((sy * (yo - TAB[0]), sy * (yo - TAB[1])))
         x0, x1 = sorted((sx * xo, sx * (xo + off + 1)))
-        box(root, 'Large frame tab relief', x0, x1, y0, y1, -SKIRT_D - 0.1, LIP_T + 0.1, cut, ring)
+        # the tab sticks out at mat level, under the lip: a low slot through the wall, the lip stays whole
+        box(root, 'Large frame tab relief', x0, x1, y0, y1, -1.5, 0.4, cut, ring)
     # cut the ring into four corner pieces: everything farther than LEG from a corner goes
     gx, gy = PLATE_W / 2 - LEG, PLATE_D / 2 - LEG
-    box(root, 'Large frame split X', -gx, gx, -yo - off - 1, yo + off + 1, -SKIRT_D - 0.1, LIP_T + 0.1, cut, ring)
-    box(root, 'Large frame split Y', -xo - off - 1, xo + off + 1, -gy, gy, -SKIRT_D - 0.1, LIP_T + 0.1, cut, None)
+    box(root, 'Large frame split X', -gx, gx, -yo - off - 1, yo + off + 1, zb - 0.1, LIP_T + 0.1, cut, ring)
+    box(root, 'Large frame split Y', -xo - off - 1, xo + off + 1, -gy, gy, zb - 0.1, LIP_T + 0.1, cut, None)
     corners = list(root.bRepBodies)          # the cuts leave exactly the four corners (Fusion renames the pieces)
     if len(corners) != 4:
         raise RuntimeError('expected 4 corner pieces, got %d' % len(corners))
@@ -144,9 +155,9 @@ def build(root):
 
 def fit_check(root, des, corners):
     new = adsk.fusion.FeatureOperations.NewBodyFeatureOperation
-    sk = sketch(root, -4.0, 'Fit check plate')
+    sk = sketch(root, -PLATE_T, 'Fit check plate')
     rrect(sk, PLATE_W, PLATE_D, PLATE_R)
-    plate = extrude(root, -4.0, sk.profiles.item(0), 4.0, new, 'Fit check plate').bodies.item(0)
+    plate = extrude(root, -PLATE_T, sk.profiles.item(0), PLATE_T, new, 'Fit check plate').bodies.item(0)
     plate.name = 'Fit check plate (%g x %g)' % (PLATE_W, PLATE_D)
     sk = sketch(root, 0, 'Fit check insert')
     sk.sketchCurves.sketchLines.addTwoPointRectangle(P3.create(-AREA[0] / 2 * MM, -AREA[1] / 2 * MM, 0),

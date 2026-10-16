@@ -111,10 +111,12 @@ testing, and every size from 2R to 8R now uses the same design.
   rubs with less friction and creeps less.
 - **Test coupon:** the tray cut 15 mm high. It keeps the whole mechanism and holds a few blanks.
 - **Open front, no slot bridge:** the 65 mm bridge over the old slot always sagged and left strings that caught
-  the blank. The front is now open in the middle, and a stop grows out of each side wall: a 3 mm ledge 1.5 mm
-  above the floor, then a 45° underside, so nothing needs a bridge. The bottom blank slides out under the stops,
-  and the next one is caught by its corners. You can see the stack through the opening, so this version has no
-  tick marks.
+  the blank. The front is now open in the middle, and a stop grows out of each side wall: a 3 mm ledge, then a
+  45° underside, so nothing needs a bridge. The bottom blank slides out under the stops, and the next one is
+  caught by its corners. You can see the stack through the opening, so this version has no tick marks.
+- **Front gap:** the ledge is drawn 2.2 mm above the floor and droops to about 1.7 mm when printed. On 4R test
+  pieces, 2.0, 2.2 and 2.4 mm all let the bottom blank out and held the next one. The full 4R tray at 2.0 was
+  tight, so every size uses 2.2 for margin.
 - **Pins:** 5 mm (button) and 4 mm (sled), with rounded roots. The first 3 mm pins snapped, because they print
   standing up.
 

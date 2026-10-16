@@ -156,27 +156,29 @@ its product page calls them standard and large. By size:
   between pockets where possible. Butt the tiles together on the plate (or glue them with CA).
 - Print in **matte black** PLA: plain and matte so the O1's scan picks out the white blanks.
 - Calibrate once: tape over the jig, print the template, measure the offset, correct it in xTool Studio.
-- **Registration frame (small plate):** two identical halves clip onto the plate, one on each end (turn the
-  second half around).
-  - **Grip:** skirts hug the end, the rounded R4 corners, and the front and back faces. A 2 mm hook under the
-    plate's end clamps the 7.5 mm end lip in an 8.2 mm slot, so a bump can't lift it off. The first sit-on version
-    fell off. Slide each half on from its end.
-  - **Window:** the print area plus 0.3 mm, so any jig drops in at the same spot. Swap jigs by lifting one out and
-    dropping the next in.
-  - **Tab reliefs:** a low slot under the ring clears the mat's pull tab (it sticks out 6–7 mm) either way round.
-  - **Print upright, as exported:** the hook stands on the print bed.
-  - **Plate figures:** 344 × 128 mm top face, R4 corners, 16.5 mm thick, and a handle cutout under each end that
-    leaves a 7.5 mm lip. These are measured, and they match published fits and photos.
+- **Clips that lock frames to the plate:** straight C-clips, each printed lying on its C profile. Both jaws are
+  part of the flat outline, so there are no overhangs and no supports, and the jaws bend along the layers, the
+  strong direction. (One-piece clips printed upright needed 7 mm overhangs and nearly failed.) Each top jaw lies on
+  the mat, and each hook goes under the plate, so a bump can't lift a clip.
+  - **Large plate:** eight identical edge clips, two near each corner, 50–90 mm from it. That keeps them clear of
+    the mat tab and of the spring latches at the middle of the long sides. Their top jaws reach the print area,
+    so together they form the 330 × 420 window for jigs and acrylic sheets. The plate is 344 × 434 × 16.6 mm.
+  - **Small plate:** the frame halves (below) locate the jigs, and one end clip per end holds a half down. Its
+    jaw clamps the half's end lip, and its hook goes under the plate's 7.5 mm end lip. Slide it on from the end,
+    centred.
+  - `o1_clips` recipe: a brim, because the clips stand 40–50 mm tall while printing, plus solid infill and four
+    walls.
 
-- **Corner clips (large plate):** four corner clips, all printed on one 256 mm bed. Each wraps a corner of the
-  344 × 434 × 16.6 mm plate, with a lip 6 mm under it, so a bump can't lift it off. Their top lips form a window
-  the size of the 330 × 420 print area plus 0.3 mm, so a jig or a 330 × 420 acrylic sheet drops in square.
-  - Two clips carry the mat-tab relief: front-left, and rear-right (the same part turned 180°).
-  - The clips stay clear of the spring latches at the middle of both long sides.
-  - Slide each clip on from its corner, and print upright, as exported.
+- **Frame halves (small plate):** two identical halves drop over the plate, one on each end (turn the second
+  half around), and the end clips hold them.
+  - Skirts hug the end, the rounded R4 corners, and the front and back faces.
+  - The window is the print area plus 0.3 mm, so any jig drops in at the same spot. Swap jigs by lifting one out
+    and dropping the next in.
+  - Tab reliefs clear the mat's pull tab either way round.
+  - Print lip-down, as exported: no overhangs.
 
 `fusion/o1_jigs.py` generates jigs for any flat rectangular item: add a line to `ITEMS`. `fusion/o1_frame.py`
-builds the small-plate frame, and `fusion/o1_frame_large.py` the large-plate corners.
+builds the small-plate frame halves, and `fusion/o1_clips.py` the clips for both plates.
 
 ## Printing on Bambu Lab printers
 

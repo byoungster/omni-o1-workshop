@@ -1,21 +1,20 @@
 """Registration frame for the xTool O1 Omni small plate (Autodesk Fusion API script).
 
-Two identical halves clip onto the plate, one on each end (turn the second half 180 degrees). Each half hugs its
-end, both rounded corners and the front and back faces with a skirt, and a 2 mm hook under the plate's end
-clamps the end lip between the hook and the frame's top lip, so a bump can't lift it off. (The first, sit-on-top
-version fell off when bumped.) Slide each half on from its end. A thin ring lies on the mat around the print
-area; its window is the print area plus WIN_CLR per side, so any jig insert cut to the print area (o1_jigs.py,
+Two identical halves drop over the plate, one on each end (turn the second half 180 degrees), and an end clip
+from o1_clips.py holds each one down (the halves alone fell off when bumped). Each half
+hugs its end face, both rounded corners and the front and back faces with a skirt, so it sits square
+on the plate and cannot shift sideways. A thin ring lies on the adhesive mat around the print area. Its
+window is the print area plus WIN_CLR per side, so any jig insert cut to the print area (o1_jigs.py,
 330 x 122 mm) drops in at the same place every time. Swap jigs by lifting the insert out.
 
-Plate figures: top face 344 x 128 mm with R4 corners (third-party fits and xTool's 343 x 127 mat). 16.5 mm thick
-at the faces and corners; each end has a handle cutout underneath, leaving an end lip 7.5 mm thick over a
-trapezoid about 9 mm high, 83 mm wide at the top (the user's measurements, matching a measured photo). Jig
-Generator's proven end clip clamps that lip in an 8.2 mm gap with a 2 mm hook reaching ~8 mm under. The mat's
-pull tab sticks out 6-7 mm at the right end near the rear; the plate goes in either way round, so each half has a
-tab relief at diagonally opposite corners.
+Plate figures (researched 2026-10-14): xTool publishes only the print area. Third-party models
+agree on a 344 x 128 mm top face with R4 corners. The body is up to 129.5 mm deep, and the print area is
+centred (7 mm in from each end, 3 mm in from front and rear). The mat's pull tab sticks out of the right
+end near the rear corner. The plate can go in either way round, so each half has a tab relief at
+diagonally opposite corners. Skirts stop short of the centre of the front and back faces, where the
+plate carries a badge or latch.
 
-Built and printed upright, as used: the hook and skirts stand on the print bed, so the hook's gripping face prints
-as a clean top surface. Always builds into a new document.
+Built upside down (ring on the bed, skirts up), as it prints: no overhangs. Always builds into a new document.
 """
 import math
 
@@ -26,22 +25,18 @@ P3 = adsk.core.Point3D
 MM = 0.1  # Fusion API lengths are cm
 
 AREA = (330.0, 122.0)      # print area, small plate
-PLATE = (344.0, 128.0)     # plate top face (mat)
+PLATE = (344.0, 128.0)     # plate top face (mat), third-party figures
 PLATE_R = 4.0              # plate corner radius (vertical corners)
-PLATE_T = 16.5             # plate thickness at the faces and corners (user's measurement)
 BODY_D = 129.5             # plate body depth below the mat (slightly proud of the mat front and back)
-SKIRT_SPAN = 130.3         # skirt inner faces, front to back (published fits: 130.2-130.75)
-END_CLR = 0.2              # end wall to the plate's end face
+SKIRT_SPAN = 130.3         # skirt inner faces, front to back (three published fits: 130.2-130.75)
 RING_T = 1.6               # ring on the mat: just under the 1.7 mm jig inserts, so items stay highest
-WALL = 2.4                 # skirt and end wall
-FLANGE = 7.5               # end lip thickness over the handle cutout (user's measurement)
-HOOK_CLR, HOOK_T = 0.7, 2.0    # gap above the hook (8.2 mm total slot, as Jig Generator) and hook thickness
-HOOK_IN, HOOK_W = 7.0, 80.0    # hook reach under the end lip, and width (the cutout is ~83 mm at the top)
-SKIRT_D = FLANGE + HOOK_CLR + HOOK_T   # every skirt reaches the hook's bottom, so all of it starts on the print bed
+WALL = 2.4                 # skirt wall
+SKIRT_D = 6.0              # skirt depth down the plate faces (5-8 mm proven by others)
 WIN_CLR = 0.3              # window clearance around the insert, per side
 RELIEF_R = 1.0             # window corner relief, so square insert corners seat
 MID_GAP = 1.0              # gap between the halves at the centre (plate width is 344 +- 0.5)
-TAB = (7.0, 36.0)          # mat-tab relief along the end, from the rear corner (tab ~9-34 mm, sticks out 6-7 mm)
+BADGE_HALF = 35.0          # no skirt within this distance of the centre, front and back
+TAB = (7.0, 36.0)          # mat-tab relief, from the rear corner, at the right end (tab ~9-34 mm, sticks out 6-7)
 NAME = 'O1 Small frame half'
 
 
@@ -122,30 +117,26 @@ def box(root, z0, z1, x0, x1, y0, y1, op, name, body):
 
 
 def build_half(root):
-    """One frame half for the +X end, as used: plate top (mat) at z = 0, ring above, skirts and hook below."""
+    """One frame half for the +X end, upside down: ring z 0..RING_T on the bed, skirts up to RING_T + SKIRT_D."""
     cut = adsk.fusion.FeatureOperations.CutFeatureOperation
-    join = adsk.fusion.FeatureOperations.JoinFeatureOperation
-    x_end = PLATE[0] / 2 + END_CLR               # end wall inner face
+    h = RING_T + SKIRT_D
+    x_end = PLATE[0] / 2                         # skirt end wall sits against the plate's end face
     hy_in = SKIRT_SPAN / 2
-    r_in = PLATE_R
+    r_in = PLATE_R                               # hugs the plate corner (front/back clearance keeps it clear)
     x0 = MID_GAP / 2
-    zb = -SKIRT_D
 
-    sk = sketch(root, zb, NAME + ' Outline')
+    sk = sketch(root, 0, NAME + ' Outline')
     end_outline(sk, x0, x_end + WALL, hy_in + WALL, r_in + WALL)
-    body = extrude(root, sk, sk.profiles.item(0), SKIRT_D + RING_T, adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
+    body = extrude(root, sk, sk.profiles.item(0), h, adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
                    NAME).bodies.item(0)
     body.name = NAME
 
-    # plate pocket inside the skirts, below the ring
-    sk = sketch(root, zb, NAME + ' Plate pocket')
+    # Plate pocket inside the skirts (above the ring)
+    sk = sketch(root, RING_T, NAME + ' Plate pocket')
     end_outline(sk, x0 - 1, x_end, hy_in, r_in)
     extrude(root, sk, sk.profiles.item(0), SKIRT_D, cut, NAME + ' Plate pocket', body)
 
-    # hook under the end lip: clamps the 7.5 mm lip in an 8.2 mm gap below the ring
-    box(root, zb, zb + HOOK_T, x_end - HOOK_IN, x_end + 0.01, -HOOK_W / 2, HOOK_W / 2, join, NAME + ' End hook', body)
-
-    # window: print area half + clearance, with corner reliefs, through the ring
+    # Window: print area half + clearance, with corner reliefs, through the ring
     wx, wy = AREA[0] / 2 + WIN_CLR, AREA[1] / 2 + WIN_CLR
     sk = sketch(root, 0, NAME + ' Window')
     sk.sketchCurves.sketchLines.addTwoPointRectangle(P3.create((x0 - 1) * MM, -wy * MM, 0), P3.create(wx * MM, wy * MM, 0))
@@ -154,17 +145,19 @@ def build_half(root):
             P3.create((wx - RELIEF_R * 0.3) * MM, sy * (wy - RELIEF_R * 0.3) * MM, 0), RELIEF_R * MM)
     extrude(root, sk, list(sk.profiles), RING_T, cut, NAME + ' Window', body)
 
-    # mat-tab relief through the end wall at mat level, at the rear corner of this (+X) end; the other half,
-    # turned 180 degrees, gets it at the front-left. The hook is well below it.
+    # Skirts stop short of the centre (badge or latch on the plate's front and back faces)
+    box(root, RING_T, h, x0 - 1, BADGE_HALF, -hy_in - WALL - 1, hy_in + WALL + 1, cut, NAME + ' Badge relief', body)
+
+    # Mat-tab relief through the end wall. In use the ring is on top, so the rear corner (+Y in use)
+    # is at -Y here. The other half, turned 180 degrees, gets the relief at the front-left corner.
     y0, y1 = PLATE[1] / 2 - TAB[1], PLATE[1] / 2 - TAB[0]
-    box(root, -1.5, 0.4, x_end - 0.01, x_end + WALL + 1, y0, y1, cut, NAME + ' Tab relief', body)   # under the ring
+    box(root, 0, h, x_end, x_end + WALL + 1, -y1, -y0, cut, NAME + ' Tab relief', body)
     return body
 
 
 def fit_check(root, des, half):
-    """Turned copy for the other end, a stand-in plate with its end cutouts, and a jig insert."""
+    """Turned copy for the other end, a stand-in plate and a jig insert, then interference and gaps."""
     new = adsk.fusion.FeatureOperations.NewBodyFeatureOperation
-    cut = adsk.fusion.FeatureOperations.CutFeatureOperation
     copy = root.features.copyPasteBodies.add(half).bodies.item(0)
     mv = root.features.moveFeatures
     tr = adsk.core.Matrix3D.create()
@@ -174,23 +167,21 @@ def fit_check(root, des, half):
     mv.add(mv.createInput(coll, tr))
     copy.name = NAME + ' (other end)'
 
-    sk = sketch(root, -PLATE_T, 'Fit check plate')
+    # Stand-ins, upside down like the frame: mat top on the ring at z = RING_T
+    sk = sketch(root, RING_T, 'Fit check plate mat')
+    rrect(sk, PLATE[0], PLATE[1], PLATE_R)
+    mat = extrude(root, sk, sk.profiles.item(0), 1.5, new, 'Fit check plate mat').bodies.item(0)
+    sk = sketch(root, RING_T + 1.5, 'Fit check plate body')
     rrect(sk, PLATE[0], BODY_D, PLATE_R + (BODY_D - PLATE[1]) / 2)
-    plate = extrude(root, sk, sk.profiles.item(0), PLATE_T, new, 'Fit check plate').bodies.item(0)
-    plate.name = 'Fit check plate (344 x 129.5 x %.1f)' % PLATE_T
-    # handle cutout under each end: 9 mm high trapezoid, 101 wide at the bottom, 83 at the top, 12 deep
-    for sx in (-1, 1):
-        xe = sx * PLATE[0] / 2
-        for zz, half_w in ((-PLATE_T, 101 / 2), (-PLATE_T + (PLATE_T - FLANGE) / 2, 92 / 2)):
-            box(root, zz, -FLANGE if zz > -PLATE_T else -PLATE_T + (PLATE_T - FLANGE) / 2,
-                min(xe, xe - sx * 12), max(xe, xe - sx * 12), -half_w, half_w, cut, 'Fit check end cutout', plate)
-    sk = sketch(root, 0, 'Fit check insert')
+    plate = extrude(root, sk, sk.profiles.item(0), 15.5, new, 'Fit check plate body').bodies.item(0)
+    sk = sketch(root, -0.1, 'Fit check insert')
     rrect(sk, AREA[0], AREA[1], 0)
-    insert = extrude(root, sk, sk.profiles.item(0), 1.7, new, 'Fit check insert').bodies.item(0)
+    insert = extrude(root, sk, sk.profiles.item(0), 1.7, new, 'Fit check insert (330 x 122 x 1.7)').bodies.item(0)
+    mat.name, plate.name = 'Fit check plate mat (344 x 128)', 'Fit check plate body (344 x 129.5)'
     insert.name = 'Fit check insert (330 x 122 x 1.7)'
 
     ents = adsk.core.ObjectCollection.create()
-    for b in (half, copy, plate, insert):
+    for b in (half, copy, mat, plate, insert):
         ents.add(b)
     ii = des.createInterferenceInput(ents)
     ii.areCoincidentFacesIncluded = False
@@ -199,21 +190,9 @@ def fit_check(root, des, half):
     mm = adsk.core.Application.get().measureManager
     gap = lambda a, b: mm.measureMinimumDistance(a, b).value * 10
     print('interference (touching faces excluded): %s' % (clashes or 'none'))
-    print('gaps: frame-plate %.2f, frame-insert %.2f, half-half %.2f mm' % (gap(half, plate), gap(half, insert), gap(half, copy)))
-
-    # can it be knocked off? lift and slide copies of the half against the plate
-    tb = adsk.fusion.TemporaryBRepManager.get()
-
-    def moved_clash(dx, dz):
-        a = tb.copy(half)
-        m = adsk.core.Matrix3D.create()
-        m.translation = adsk.core.Vector3D.create(dx * MM, 0, dz * MM)
-        tb.transform(a, m)
-        tb.booleanOperation(a, tb.copy(plate), adsk.fusion.BooleanTypes.IntersectionBooleanType)
-        return a.volume * 1000
-    print('lift 1.0 mm: %.2f mm3 (hook caught under the end lip if > 0)' % moved_clash(0, 1.0))
-    print('slide off outward 3 / 8 mm: %.2f / %.2f mm3 (0 = slides on and off freely)' % (moved_clash(3, 0), moved_clash(8, 0)))
-    for b in (plate, insert):
+    print('gaps: frame-mat %.2f, frame-body %.2f, frame-insert %.2f, half-half %.2f mm' % (
+        gap(half, mat), gap(half, plate), gap(half, insert), gap(half, copy)))
+    for b in (mat, plate, insert):
         b.opacity = 0.35
     return clashes
 

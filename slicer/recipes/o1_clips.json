@@ -1,0 +1,25 @@
+{
+  "description": "O1 plate clips (fusion/o1_clips.py): printed standing on their C profile, so a brim keeps them upright; solid and four walls so the jaws are stiff.",
+  "machine": "Bambu Lab P1S 0.4 nozzle",
+  "process": "0.20mm Standard @BBL X1C",
+  "filament": "Bambu PLA Matte @BBL P1S 0.4 nozzle",
+  "bed_type": "Textured PEI Plate",
+  "ams_color": "000000",
+  "overrides": {
+    "process": {
+      "bottom_shell_layers": "4",
+      "top_shell_layers": "4",
+      "wall_loops": "4",
+      "brim_type": "outer_only",
+      "sparse_infill_density": "100%",
+      "sparse_infill_pattern": "zig-zag"
+    }
+  },
+  "changelog": [
+    "2026-10-15  created from o1_jigs for side-printed C-clips",
+    "2026-10-15  process.brim_type: (preset default) -> outer_only  (clips stand 40-50 mm tall on a small C profile; a brim keeps them upright)",
+    "2026-10-15  process.sparse_infill_density: (preset default) -> 100%  (solid jaws: stiff clamp, no voids)",
+    "2026-10-15  process.sparse_infill_pattern: (preset default) -> zig-zag  (fills solid at 100% (gyroid does not))",
+    "2026-10-15  process.wall_loops: 3 -> 4  (jaws and hook mostly perimeters, the strongest way to bend them)"
+  ]
+}

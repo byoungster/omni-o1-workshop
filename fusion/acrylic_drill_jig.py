@@ -24,7 +24,8 @@ LEAD_IN = 0.8              # chamfer at the hole's top, to start the bit
 SHEET_T = 3.0              # 1/8 in acrylic (nominal 3.175, often 2.8-3.0 measured)
 LIP_D = 2.0                # lip depth below the sheet's top face: keep under SHEET_T
 LIP_T = 4.0                # lip thickness
-PLATE_T = 8.0              # guide plate thickness = length of the bit's guide
+PLATE_T = 4.0              # guide plate thickness = length of the bit's guide. Enough to start a pilot square
+                           # through a 1/8 in sheet; the first 8 mm plate felt bulky (user, 2026-10-16)
 SPAN = 45.0                # plate reach from each edge
 R_CORNER = 3.0             # outer corners
 R_RELIEF = 1.5             # inside corner relief for the sheet corner

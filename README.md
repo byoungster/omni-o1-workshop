@@ -194,6 +194,15 @@ its product page calls them standard and large. By size:
   - Tab reliefs clear the mat's pull tab either way round.
   - Print lip-down, as exported: no overhangs.
 
+- **Acrylic sheet corner drill guide:** for mounting holes 1 in from both edges of 12x12 in acrylic sheets. One
+  guide does all four corners.
+  - Two lips hook the sheet's edges at a corner. Drill a 1/8 in pilot through the guide hole, move to the next
+    corner, then open the pilots up to screw size.
+  - The lips are 2 mm deep, shorter than a 1/8 in sheet, so the guide sits flat with the sheet on the bench. A
+    relief at the inside corner lets a burred corner seat.
+  - Print it top-face down, lips up, as exported (`drill_jigs` recipe). For another hole spacing, bit or sheet
+    thickness, edit the constants at the top of `fusion/acrylic_drill_jig.py`.
+
 `fusion/o1_jigs.py` generates jigs for any flat rectangular item: add a line to `ITEMS`. `fusion/o1_frame.py`
 builds the small-plate frame halves, and `fusion/o1_clips.py` the clips for both plates.
 

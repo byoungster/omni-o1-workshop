@@ -15,7 +15,9 @@
     "2026-10-13  note: preset already uses monotonic bottom surface, 0.15 elephant-foot compensation, no skirt",
     "2026-10-13  ams_color: FFFFFF  (blanks print in white; printer picks the AMS slot holding white)",
     "2026-10-13  model: label deboss 0.4 -> 0.2 mm (one layer; first test print's label was deeper than wanted). Keep layer_height 0.2 so the label is exactly the top layer.",
-    "2026-10-14  model: label removed (storage trays carry the size; plain blanks diffuse light evenly). Label cuts suppressed in Fusion, LABELS=False in photo_blanks.py."
+    "2026-10-14  model: label removed (storage trays carry the size; plain blanks diffuse light evenly). Label cuts suppressed in Fusion, LABELS=False in photo_blanks.py.",
+    "2026-10-16  start_purge_extra_mm: 250  (white blanks: the bed-side first layer is the UV-print face, so any black left in the nozzle from an earlier print shows; user asked to always purge more before white. Stock start purge 105 mm, now 355 mm, ~850 mm3)"
   ],
-  "ams_color": "FFFFFF"
+  "ams_color": "FFFFFF",
+  "start_purge_extra_mm": 250
 }

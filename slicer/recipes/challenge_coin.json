@@ -18,6 +18,8 @@
     "2026-10-15  process.sparse_infill_density: (preset default) -> 100%  (solid coin (user asked for 100% infill))",
     "2026-10-15  process.sparse_infill_pattern: (preset default) -> zig-zag  (straight lines fill solid at 100%; the gyroid default leaves gaps)",
     "2026-10-15  process.ironing_type: (preset default) -> top  (flat, smooth top face for UV printing (the bottom face is smooth PEI))",
-    "2026-10-15  process.wall_loops: (preset default) -> 3  (crisp reeded edge)"
-  ]
+    "2026-10-15  process.wall_loops: (preset default) -> 3  (crisp reeded edge)",
+    "2026-10-16  start_purge_extra_mm: 250  (white coin, both faces UV printed: same reason as the blanks; user asked to always purge more before white. Stock start purge 105 mm, now 355 mm, ~850 mm3)"
+  ],
+  "start_purge_extra_mm": 250
 }

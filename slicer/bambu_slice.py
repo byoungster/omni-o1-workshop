@@ -189,6 +189,27 @@ def _job(recipe, job, bed_type, printer):
     return r, re.sub(r'[^\w\- .]', '_', job)
 
 
+PURGE_ANCHOR = 'M106 P1 S255\nG92 E0\nG1 E5 F300'   # P1S start G-code: right after its two 50 mm purges
+
+
+def extra_start_purge(gcode, mm, step=50):
+    """Push `mm` more filament through the nozzle over the purge chute at print start, in rounds of `step` mm with a
+    cool-down and a shake between them (as Bambu's own filament-change flush does), so nothing of the previous colour
+    is left. For prints whose first layer is the show face, e.g. white photo blanks after a black print: the stock P1S
+    start purges only 105 mm (~250 mm3), and black to white needs ~600 mm3 or more."""
+    if gcode.count(PURGE_ANCHOR) != 1:
+        raise RuntimeError('start G-code purge block not found: extra purge is written for the P1S start G-code')
+    rounds, left = [], mm
+    while left > 0:
+        e = min(step, left)
+        rounds.append('M106 P1 S255\nM400 S3\nG1 X70 F9000\nG1 X76 F15000\nG1 X65 F15000\nG1 X76 F15000\n'
+                      'G1 X65 F15000 ; shake off the purged filament\nG1 X54 F9000\nM106 P1 S0\n'
+                      'G92 E0\nG1 E%g F200\nM400\n' % e)
+        left -= e
+    block = '; extra purge %g mm (recipe start_purge_extra_mm)\n%s' % (mm, ''.join(rounds))
+    return gcode.replace(PURGE_ANCHOR, block + PURGE_ANCHOR)
+
+
 def _settings_files(r, recipe, tmp):
     """Fully resolved machine/process/filament settings files (the CLI ignores preset inheritance)."""
     ov, files = overrides(r), {}
@@ -198,6 +219,8 @@ def _settings_files(r, recipe, tmp):
             o['curr_bed_type'] = r['bed_type']
         name = None if cat == 'machine' else 'Omni %s (%s)' % (recipe, cat)
         cfg = bp.build(cat, r[cat], o, name=name)
+        if cat == 'machine' and r.get('start_purge_extra_mm'):
+            cfg['machine_start_gcode'] = extra_start_purge(cfg['machine_start_gcode'], r['start_purge_extra_mm'])
         if cat != 'machine':
             cfg['compatible_printers'] = [r['machine']]
             cfg['compatible_printers_condition'] = ''

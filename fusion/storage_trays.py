@@ -36,7 +36,9 @@ LINTEL = 3.0      # solid strip above the slot: bridges side wall to side wall a
 # left strings that caught the blank, even at 1.9 mm with reduced bridge flow.)
 FRONT_GAP = 2.0       # gap under the stops as drawn. The flat ledge droops ~0.5 mm when printed, leaving ~1.5:
                       # the bottom blank passes and the next is caught at mid-thickness (a drawn 1.5 printed
-                      # at ~1.0 and caught the first blank too; user, 2026-10-15)
+                      # at ~1.0 and caught the first blank too; user, 2026-10-15). Confirmed on 4R with
+                      # front-section tests at 2.0, 2.2 and 2.4: all fed one blank and held the next, and
+                      # 2.0 was best (user, 2026-10-16), so every size keeps 2.0
 FRONT_STOP = 3.0      # flat part of each stop, from the side wall (a short overhang, no bridge)
 FRONT_STUB = 15.5     # each stop widens at 45 degrees to this, then runs straight up (room for the label)
 FLOOR = 1.6

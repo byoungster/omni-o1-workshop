@@ -49,11 +49,13 @@ PLUG_H = 2.8
 PLUG_WALL = 1.6
 BED = 256.0
 KERF = 0.25       # dovetail seam gap
+SEAM_DY_BUTTON = -40.0   # button trays: seam 40 mm in front of centre, clear of the lever, button and sled ear
+                         # (all at mid depth) and behind the spring pocket; it crosses only the straight groove
 LABEL_D = 0.6
 TICK_D = 0.4
 GAP = 25.0
 LID_ROW_Y = -330.0
-ONLY = ('2R',)    # sizes to build (prototype); () builds every size
+ONLY = ()         # sizes to build, e.g. ('2R',); () builds every size
 
 # Side dispenser: a sled in a floor groove near the right wall, a zigzag spring printed on its front,
 # and a knob whose arm passes through a window in the right wall and slides a dovetail into the sled.
@@ -302,13 +304,14 @@ def face_text(ctx, sk, text, h, x0, x1, z, y, align):
     return sk.sketchTexts.add(ti)
 
 
-def split_seam(ctx, body, cx, cy, W, H, name):
-    """Cut a dovetail seam across the part at y = cy and name the two halves Front/Back."""
-    pts = [(cx - W / 2 - 3, cy)]
+def split_seam(ctx, body, cx, cy, W, H, name, dy=0.0):
+    """Cut a dovetail seam across the part at y = cy + dy and name the two halves Front/Back."""
+    ys = cy + dy
+    pts = [(cx - W / 2 - 3, ys)]
     for k in (-1, 0, 1):
         xc = cx + k * W / 4
-        pts += [(xc - 4, cy), (xc - 6, cy + 6), (xc + 6, cy + 6), (xc + 4, cy)]
-    pts.append((cx + W / 2 + 3, cy))
+        pts += [(xc - 4, ys), (xc - 6, ys + 6), (xc + 6, ys + 6), (xc + 4, ys)]
+    pts.append((cx + W / 2 + 3, ys))
     poly = offset_polyline(pts, KERF / 2) + list(reversed(offset_polyline(pts, -KERF / 2)))
     sk = ctx.sketch(0, name + ' Seam')
     polygon(sk, poly)
@@ -917,14 +920,14 @@ def run(_context: str):
         W, H = dims(w, h)
         tray = build_tray(ctx, lbl, w, h, xs[lbl], 0)
         lid = build_lid(ctx, lbl, w, h, xs[lbl], LID_ROW_Y)
+        if max(W, H) > BED:     # before the loose parts are built: the seam collects every body in the outline
+            split_seam(ctx, tray, xs[lbl], 0, W, H, lbl + ' Tray', SEAM_DY_BUTTON if DISPENSER == 'button' else 0.0)
+            split_seam(ctx, lid, xs[lbl], LID_ROW_Y, W, H, lbl + ' Lid')
         if DISPENSER == 'button':
             build_button_mechanism(ctx, lbl, w, h, xs[lbl], 0)
         elif DISPENSER == 'side':
             build_mechanism(ctx, lbl, w, h, xs[lbl], 0)
             for i, key in enumerate(TEST_SPRINGS):      # shifted clear of the tray, for printing
                 build_mechanism(ctx, lbl, w, h, xs[lbl] + W + 20 + 30 * i, 0, key, with_knob=False)
-        if max(W, H) > BED:
-            split_seam(ctx, tray, xs[lbl], 0, W, H, lbl + ' Tray')
-            split_seam(ctx, lid, xs[lbl], LID_ROW_Y, W, H, lbl + ' Lid')
     print('tray height %.1f mm, pocket %.1f mm deep' % (TRAY_H, POCKET_D))
     report(ctx)

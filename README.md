@@ -81,8 +81,25 @@ returns it.
   longer; thick, short springs are stiffer but wear sooner. PETG lasts longer than PLA.
 - Checked in CAD for rest fit, the full stroke, stacking, knob capture and the assembly path.
 
-**Button dispenser (v4, in test):** `exports/storage_button_dispenser/` replaces the side slider, which still
-jammed: it was pushed 11 mm off the sled's line with nothing to stop it twisting.
+**Button dispenser (v4):** `exports/storage_button_dispenser/` replaces the side slider, which still
+jammed: it was pushed 11 mm off the sled's line with nothing to stop it twisting. The 2R tray passed hand
+testing, and every size from 2R to 8R now uses the same design.
+- **Sizes:** each size has its own tray and sled. The lever and button are the same part for every size,
+  because the mechanism is placed from the right wall and the tray's mid-depth.
+  - The 8R tray is too deep for a 256 mm bed. It's split by a dovetail seam 40 mm in front of centre, clear of
+    the mechanism, so glue the two halves. Its 261 mm sled is exported lying across the bed diagonal.
+  - Pressing force grows with the blank size, because the bottom blank carries the stack above it. Estimates
+    for a full tray: about 6 N for 2R, 11 N for 4R, 19 N for 6R and 29 N for 8R (PLA on PLA, friction about
+    0.35). It drops as the tray empties. 4R is the first larger size to test.
+
+  | Size | Tray (mm) | Sled length (mm) |
+  |------|-----------|------------------|
+  | 2R | 70 x 95 x 32.5 | 96 |
+  | 3R | 95 x 133 x 32.5 | 134 |
+  | 4R | 108 x 158 x 32.5 | 159 |
+  | 5R | 133 x 184 x 32.5 | 185 |
+  | 6R | 158 x 209 x 32.5 | 210 |
+  | 8R | 209 x 260 x 32.5 (two halves) | 261 |
 - **How it works:** press a button on the right wall 5 mm and a bell-crank lever under the floor turns it into the
   sled's 15 mm (3:1). The parts meet only at a pivot and at pins in slots, so nothing is pushed off its own axis.
 - **Layout:** the button runs in a closed tunnel through the wall. The lever lies above it in an open pocket under

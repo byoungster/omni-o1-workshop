@@ -254,7 +254,9 @@ builds the small-plate frame halves, and `fusion/o1_clips.py` the clips for both
   acrylic frames in place, instead of the edge clips.
   - Each one hugs a plate corner with a 6 mm skirt, and its 1.6 mm lip on the mat stops at the 330 x 420 print
     area (+0.3 mm).
-  - The two labelled TAB have a cut-out for the mat's peel tab; put them at the corners where the tab is.
+  - The two labelled TAB have no skirt along their side leg past the rounded corner, so the mat's peel tab clears
+    them wherever it sits. Put them at the corners where the tab is: the left side near the front, or the right
+    side near the rear when the plate goes in the other way round. (A first 6–32 mm notch hit the tab.)
   - Print lip-down, as exported (`shop_jigs` recipe, about 19 g for all four).
 - **Labels:** every jig tile has its set and tile ID in bold on its underside (e.g. LARGE 4R x6 A1, 12X12 FRAME
   B2). Clips say LARGE or SMALL, and the small-plate frame halves say SMALL FRAME, so sets go back together

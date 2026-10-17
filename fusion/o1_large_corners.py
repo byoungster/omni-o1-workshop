@@ -10,9 +10,11 @@ WIN_CLR, so a jig or an acrylic sheet cut to 330 x 420 drops in square. Corners 
 fit one 256 mm printer bed (a full frame round a ~344 x 434 plate would be about eight pieces), they stay clear
 of the plate's spring latch at mid-edge, and each one finds its own corner.
 
-Two shapes, two of each: the front-left piece (turned 180 degrees it is the rear-right) has a relief for the
-mat's pull tab, which sits on the right side near the rear and moves to the left front when the plate goes in
-the other way round; the front-right piece (turned, the rear-left) has none.
+Two shapes, two of each: the front-left piece (turned 180 degrees it is the rear-right) has no side wall along its
+side leg past the corner radius, so the mat's pull tab clears it. The tab sticks out of the left side near the front
+(the right side near the rear when the plate goes in the other way round); its exact spot doesn't matter. The lip,
+the rounded corner and the front leg still locate the piece. The front-right piece (turned, the rear-left) has the
+full wall.
 
 Plate figures: 344 x 434 mm, 16.6 mm thick at the corners (user's measurements, 2026-10-15).
 Shown as used here; the export turns them upside down (lip on the bed, skirts up): no overhangs, no supports.
@@ -37,7 +39,8 @@ LIP_T = 1.6              # lip on the mat: under the 1.7 mm jigs and any acrylic
 WIN_CLR = 0.3            # window clearance round the insert, per side
 RELIEF_R = 1.0           # window corner relief
 LEG = 70.0               # each piece reaches this far along both edges from the corner
-TAB = (6.0, 32.0)        # mat-tab relief along the side edge, measured from the corner (both tab corners)
+TAB = (4.0, 71.0)        # mat-tab relief: no side wall from the end of the corner radius to the end of the leg
+                         # (6-32 mm, a guess, clashed with the tab at the left side near the front; user, 2026-10-17)
 INSERT_T = 2.7           # stand-in insert: the acrylic frame tiles (the blank jigs are 1.7)
 LABEL_H, LABEL_D = 5.0, 0.6   # on the lip's top face, along the side leg
 

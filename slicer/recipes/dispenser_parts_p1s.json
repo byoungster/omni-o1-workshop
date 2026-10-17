@@ -1,0 +1,17 @@
+{
+  "description": "Dispenser and storage parts on the P1S: black PLA Basic on smooth PEI. Same overrides as dispenser_parts (X1C).",
+  "machine": "Bambu Lab P1S 0.4 nozzle",
+  "process": "0.20mm Standard @BBL X1C",
+  "filament": "Bambu PLA Basic @BBL P1S 0.4 nozzle",
+  "bed_type": "High Temp Plate",
+  "ams_color": "000000",
+  "overrides": {
+    "process": {
+      "wall_loops": "3",
+      "bridge_flow": "0.85"
+    }
+  },
+  "changelog": [
+    "2026-10-17  created from dispenser_parts for the P1S: same overrides (3 walls, bridge_flow 0.85), black PLA Basic (the P1S has no Matte), smooth PEI; first job the 2R front-lever prototype v3"
+  ]
+}

@@ -23,7 +23,7 @@ MM = 0.1
 HOLE_IN = 25.4             # hole centre from each sheet edge (1 in)
 MARK_D = 2.5               # awl point or fine pen tip (the mounting holes are drilled 7.5 mm afterwards)
 CONE = 1.5                 # 45 degree cone at the top of the hole: centres the tip (5.5 mm across at the face)
-LABEL = 'mark'
+LABEL = 'MARK'
 SHEET_T = 3.0              # 1/8 in acrylic (nominal 3.175, often 2.8-3.0 measured)
 LIP_D = 2.0                # lip depth below the sheet's top face: keep under SHEET_T
 LIP_T = 4.0                # lip thickness
@@ -31,8 +31,8 @@ PLATE_T = 4.0              # plate thickness (the first 8 mm plate felt bulky; u
 SPAN = 45.0                # plate reach from each edge
 R_CORNER = 3.0             # outer corners
 R_RELIEF = 1.5             # inside corner relief for the sheet corner
-TEXT_H = 3.5
-TEXT_D = 0.4
+TEXT_BIG, TEXT_SMALL = 8.0, 6.0   # bold lettering looks premium, and 3.5 mm letters' counters close up on the bed face
+TEXT_D = 0.6               # three layers deep: crisp on the glossy bed face
 
 
 def box(root, x0, y0, z0, x1, y1, z1, op, name, body=None):
@@ -63,14 +63,14 @@ def prism(root, prof, z0, z1, op, name, body):
     return f
 
 
-def text(root, s, x0, y0, x1, y1, body):
+def text(root, s, x0, y0, x1, y1, body, h):
     pl_in = root.constructionPlanes.createInput()
     pl_in.setByOffset(root.xYConstructionPlane, VI.createByReal(PLATE_T * MM))
     pl = root.constructionPlanes.add(pl_in)
     pl.isLightBulbOn = False
     sk = root.sketches.add(pl)
     sk.isVisible = False
-    ti = sk.sketchTexts.createInput2(s, TEXT_H * MM)
+    ti = sk.sketchTexts.createInput2(s, h * MM)
     ti.setAsMultiLine(P3.create(x0 * MM, y0 * MM, 0), P3.create(x1 * MM, y1 * MM, 0),
                       adsk.core.HorizontalAlignments.CenterHorizontalAlignment,
                       adsk.core.VerticalAlignments.MiddleVerticalAlignment, 0)
@@ -124,9 +124,10 @@ def run(_context: str):
                                                       VI.createByReal(CONE * MM), False)
     ch.add(ci).name = 'Centring Cone'
 
-    gap = HOLE_IN + MARK_D / 2 + CONE + 1.0
-    text(root, '1 in', 2, gap, SPAN - 2, gap + (SPAN - gap) / 2, body)
-    text(root, LABEL, 2, gap + (SPAN - gap) / 2, SPAN - 2, SPAN - 1, body)
+    # '1 IN' in the band between the corner lips and the hole, LABEL above the hole
+    cone_r = MARK_D / 2 + CONE
+    text(root, '1 IN', 2, 2, SPAN - 2, HOLE_IN - cone_r - 1.5, body, TEXT_BIG)
+    text(root, LABEL, 2, HOLE_IN + cone_r + 1.5, SPAN - 2, SPAN - 2, body, TEXT_SMALL)
 
     bb = body.boundingBox
     print('%s: %.1f x %.1f x %.1f mm, %.1f g solid; hole %.2f mm at %.1f mm from both edges; lips %.1f mm deep '

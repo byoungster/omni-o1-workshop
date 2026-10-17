@@ -1,0 +1,18 @@
+{
+  "description": "O1 plate rack rails (under-shelf, sustained plate load): black PLA Matte on textured PEI, X1C. Rails print lying on their outer wall.",
+  "machine": "Bambu Lab X1 Carbon 0.4 nozzle",
+  "process": "0.20mm Standard @BBL X1C",
+  "filament": "Bambu PLA Matte @BBL X1C",
+  "bed_type": "Textured PEI Plate",
+  "ams_color": "000000",
+  "overrides": {
+    "process": {
+      "wall_loops": "4",
+      "top_shell_layers": "4",
+      "bottom_shell_layers": "4"
+    }
+  },
+  "changelog": [
+    "2026-10-16  created for fusion/o1_plate_rack.py. wall_loops 4: the ledge and flange are 3.5-4.5 mm walls loaded across layers; 4 loops make them solid instead of leaving a 15% gyroid core (print-engineer review)"
+  ]
+}

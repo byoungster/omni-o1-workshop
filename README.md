@@ -120,6 +120,31 @@ testing, and every size from 2R to 8R now uses the same design.
 - **Pins:** 5 mm (button) and 4 mm (sled), with rounded roots. The first 3 mm pins snapped, because they print
   standing up.
 
+**Front-lever dispenser (prototype, 2R):** `DISPENSER = 'front'` in `fusion/storage_trays.py`, exported to
+`exports/storage_front_lever/`. It's for a tower of mixed-size trays on one shelf, largest at the bottom. A side
+button pushes the tray sideways and has to be held. Instead, you press a pad at the front-right corner straight
+down, so the force goes into the shelf.
+- **How it works:** a crank in a housing outside the right wall turns the press into a 5 mm pull on a pusher bar
+  under the floor. The pusher's rear slot drives the same 3:1 lever and sled as the button version.
+- **Parts:** tray, lid, sled, lever, pusher, fork, crank and axle.
+  - The fork is a separate flat part. It drops through a slot in the tunnel roof into a socket in the pusher.
+  - A stop block in the housing takes the load at full press.
+  - The axle prints lying on a flat and presses into the outer wall. Fit it with the flat facing back and up,
+    away from the load.
+- **Assembly:**
+  1. Slide the pusher in from the front.
+  2. Drop the fork in from above.
+  3. Drop the sled in and lay the lever on its post, as in the button version.
+  4. Drop the crank in from above, its pin entering the fork.
+  5. Press the axle in from the outside.
+- **Tower magnets:** 6 x 2 mm magnets, two in each tray's base and four in each lid. The pattern is the same on
+  every size, so any tray sits on any lid. The tower goes tray, lid, tray: the housing won't nest directly into
+  the tray below.
+- **Test pieces on the same plate:**
+  - A: the housing corner at roof clearances 1.0 and 1.2 mm (the tray itself is 0.8).
+  - B: pusher stubs with socket clearances 0.15 and 0.25 mm (the pusher itself is 0.20).
+  - C: axle press holes of 4.0, 4.1 and 4.2 mm in a 2.4 mm wall, and crank bores of 4.3 and 4.5 mm.
+
 ![Front of a tray with stock ticks](docs/images/tray-front-stock-ticks.png)
 
 ## Photo stands

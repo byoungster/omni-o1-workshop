@@ -131,26 +131,47 @@ PIN_FILLET = 0.6              # rounded pin roots spread the bending over more l
 EAR_WALL = 1.2                # wall around the slots in the button and the sled's ear
 BTN_SPRING = 'D'
 
-# Front press lever (v5): press a tab at the front-right DOWN and the bottom blank pushes out of the front, so the
+# Front press lever (v5): press a pad at the front-right DOWN and the bottom blank pushes out of the front, so the
 # force goes into the shelf and nothing pushes the tray sideways (the side button had to be held). A crank in a
-# housing at the front-right corner (its pivot runs across the tray) swings its down-arm back; the arm's pin drives a
-# pusher along the right side under the floor; the pusher's rear slot turns a straight 3:1 lever whose long arm moves
-# the same sled forward. The housing sits outside the pocket, so the front stops stay whole.
+# housing at the front-right corner (its axle runs across the tray) swings its down-arm back; the arm's pin drives a
+# fork on a pusher that runs back along the right side under the floor; the pusher's rear slot turns a straight 3:1
+# lever whose long arm moves the same sled forward. The housing sits outside the pocket, so the front stops stay whole.
+# Review fixes (2026-10-17): the fork is its own part, printed flat, dropped through a closed slot in a tunnel roof
+# that spans to the housing wall (a cut-away roof had left an unsupported ledge); a stop block takes the overload at
+# full press; the pad sits just in front of the housing (less tipping); the axle prints lying and press-fits.
 FL_R_IN, FL_R_OUT = 6.5, 19.5          # straight lever arms (3:1): short arm toward the right wall
 CRANK_T, CRANK_W = 3.5, 6.0            # crank plate thickness (x) and arm width
-CRANK_L1, CRANK_L2 = 18.0, 9.65        # tab arm, and down-arm to its pin: 9.65 x (cos 255 - cos 285) = 5 mm push
-CRANK_A0, CRANK_SWING = 15.0, 30.0     # tab arm 15 deg above horizontal at rest; it swings 30 deg down (~9 mm)
-CRANK_PIN_D, CRANK_PIN_Z = 4.0, 9.2    # crank pin; its height keeps the crank above the pusher
-CRANK_Y = 11.0                         # pivot behind the front face
-AXLE_D = 4.0                           # printed axle through the housing, the crank and into the right wall
-FORK_T, FORK_TOP = 2.5, 13.5           # fork plate on the pusher, beside the crank; open-top slot for the pin
+CRANK_L1, CRANK_L2 = 22.5, 9.65        # tab arm to the pad's far end, and down-arm to its pin
+                                       # (9.65 x (cos 255 - cos 285) = 5 mm push)
+CRANK_A0, CRANK_SWING = 15.0, 30.0     # tab arm 15 deg above horizontal at rest; it swings 30 deg down
+CRANK_PIN_D, CRANK_PIN_Z = 4.0, 11.0   # crank pin; its height keeps the crank above the tunnel roof
+CRANK_Y = 15.0                         # pivot behind the front face: the pad ends up just in front of the housing
+PAD = (10.0, 5.5)                      # finger pad: width (x, toward the pin side), length along the tab arm
+AXLE_D = 4.0                           # printed lying (with a flat); press fit in the housing's outer wall
+AXLE_FREE = 4.4                        # crank and blind-hole bore
+AXLE_BLIND = 1.2                       # blind hole into the right wall: leaves 1.2 mm to the blank pocket
+FORK_T, FORK_TOP = 3.0, 14.4           # fork part: thickness (x), top (15.0 left 0.82 under the crank hub, and the
+                                       # fork tips about 0.9 nose-up at full press; the pin top is at 13)
+FORK_PRONG = (2.0, 4.5)                # front and rear (load-bearing) prong widths; the rear one was 2 mm (SF 0.6)
+FORK_RELIEF = 0.4                      # slot 0.4 wider for the first 0.4 mm of the fork's bed face (elephant's foot
+                                       # there met the crank pin's root fillet)
+SOCKET_CLR = 0.2                       # fork stem in the pusher socket, per side (0.1 would not drop in); coupon B
+CRANK_HUB_R = 4.5                      # the hub runs across the fork band too: a 6.8 mm bore keeps the crank from
+                                       # tilting under the offset pad and puts the load next to the outer wall
+AXLE_FLAT_DIR = 45.0                   # the axle's flat faces back and up (deg from +Y toward +Z), away from the load
 PUSH_W, PUSH_GAP = 6.0, 0.3            # pusher bar width; side clearance of the crank and fork in their slot
 PUSH_X = 4.0                           # pusher bar centre line, in from the pocket's right wall
-HOUSE_D, HOUSE_WALL = 24.0, 1.6
+TUN_TOP_FRONT, ROOF_FRONT = 0.8, 1.2   # under the bridged roof of the front section: clearance and roof thickness
+HOUSE_D, HOUSE_WALL, HOUSE_H = 32.0, 2.4, 25.0   # 30 -> 32: room for the longer socket wall
 TOWER_MAGNETS = DISPENSER == 'front'   # trays and lids stack in one tower of mixed sizes, fronts flush
-MAGNET_D, MAGNET_T = 6.2, 3.2          # 6 x 3 mm disc magnets, pressed or glued in
+MAGNET_D, MAGNET_T, MAGNET_CH = 6.2, 2.2, 0.4   # 6 x 2 mm magnets (6 x 3 left 0.2 mm over cavities on 3R and 4R)
 MAGNET_DX, MAGNET_Y = 20.0, 55.0       # same pattern on every size: +-DX from the centre, Y back from the front face
-LID_BOSS_R = 4.5                       # boss under the lid: room for a 3 mm magnet in a 2 mm lid
+LID_BOSS_R = 4.5                       # boss under the lid so the 2.2 mm pocket keeps a 0.8 mm floor
+FRONT_COUPONS = DISPENSER == 'front'   # A/B test pieces printed with the prototype (print-engineer review 2026-10-17):
+COUPON_ROOF = (1.0, 1.2)               # A: housing corner at these TUN_TOP_FRONT values (the tray itself is 0.8)
+COUPON_SOCKET = (0.15, 0.25)           # B: pusher stubs at these socket clearances (the pusher itself is 0.20)
+COUPON_PRESS = (4.0, 4.1, 4.2)         # C: horizontal press holes for the axle in a 2.4 mm fin
+COUPON_BORE = (4.3, 4.5)               # C: vertical crank bores, 6.8 mm long (the crank itself is 4.4)
 
 CHAMF = RIM + FIT                     # foot inset; 45 deg transition height
 if DISPENSER == 'side':
@@ -364,7 +385,7 @@ def split_seam(ctx, body, cx, cy, W, H, name, dy=0.0):
     parts = []
     for b in ctx.root.bRepBodies:
         bb = b.boundingBox
-        if (bb.minPoint.x >= (cx - W / 2 - 1) * MM and bb.maxPoint.x <= (cx + W / 2 + 1) * MM
+        if (bb.minPoint.x >= (cx - W / 2 - 1) * MM and bb.maxPoint.x <= (cx + W / 2 + 15) * MM   # + housing
                 and bb.minPoint.y >= (cy - H / 2 - 1) * MM and bb.maxPoint.y <= (cy + H / 2 + 1) * MM):
             parts.append(b)
     if len(parts) != 2:
@@ -795,7 +816,10 @@ def front_geometry(w, h, cx, cy):
     g['slot_y'] = g['pin_in'][1]
     g['slot_x'] = (px + FL_R_IN * math.cos(th) - ri, px + FL_R_IN + ri)
     g['rear_y'] = g['slot_y'] + ri + EAR_WALL
-    # crank housing at the front-right corner, outside the pocket
+    # tunnel front section under a roof that spans to the housing's outer wall
+    g['tz1_front'] = BTN_Z0 + BTN_H + TUN_TOP_FRONT
+    g['roof_top'] = g['tz1_front'] + ROOF_FRONT
+    # crank housing at the front-right corner, outside the pocket: crank band, then fork band, then the outer wall
     xo = g['x_ow']
     g['crank_x'] = (xo + PUSH_GAP, xo + PUSH_GAP + CRANK_T)
     g['fork_x'] = (g['crank_x'][1] + PUSH_GAP, g['crank_x'][1] + PUSH_GAP + FORK_T)
@@ -809,15 +833,28 @@ def front_geometry(w, h, cx, cy):
     g['crank_p'] = (yp, zp)
     g['cpin0'] = front_crank_pin(g, 0.0)
     g['tab0'] = (yp + CRANK_L1 * math.cos(a0), zp + CRANK_L1 * math.sin(a0))
-    g['fork_y'] = (g['cpin0'][0] - CRANK_PIN_D / 2 - 0.2 - 2.0, g['cpin0'][0] + CRANK_PIN_D / 2 + 0.2 + 2.0)
-    g['jog_y'] = g['fork_y'][1] + 3.0                  # wide front section ends; the bar runs back from here
+    yc = g['cpin0'][0]
+    g['fork_y'] = (yc - CRANK_PIN_D / 2 - 0.2 - FORK_PRONG[0], yc + CRANK_PIN_D / 2 + 0.2 + FORK_PRONG[1])
+    g['stem_y'] = (g['fork_y'][0] + 1.5, g['fork_y'][1] - 2.0)   # socket walls 1.3 front, 4.3 behind (SF 3)
+    g['jog_y'] = g['fork_y'][1] + 2.5                  # wide front section ends; the bar runs back from here
     pin_lo = min(front_crank_pin(g, g['swing'] * k / 8)[1] for k in range(9))
     g['fork_slot_z0'] = pin_lo - CRANK_PIN_D / 2 - 0.3
     g['crank_zlo'] = pin_lo - CRANK_W / 2
-    if g['crank_zlo'] < BTN_Z0 + BTN_H + 0.4:
-        raise RuntimeError('crank reaches down into the pusher')
+    g['crank_y_back'] = max(g['fork_y'][1] + g['push'], yp + 4.5) + 0.8
+    # pad: the tab arm's last PAD[1] mm, widened toward the pin side; stays in front of the housing face
+    u0 = CRANK_L1 - PAD[1]
+    g['pad_u'] = (u0, CRANK_L1)
+    g['pad_back_y'] = yp + u0 * math.cos(a0) + CRANK_W / 2 * math.sin(a0)
+    if g['crank_zlo'] < g['roof_top'] + 0.4:
+        raise RuntimeError('crank reaches down to the tunnel roof')
     if g['jog_y'] + g['push'] + 1.0 > g['y_o'] + HOUSE_D - HOUSE_WALL:
         raise RuntimeError('pusher front section leaves the housing')
+    if g['pad_back_y'] > g['y_o'] - 0.4:
+        raise RuntimeError('pad does not clear the housing front')
+    if zp + g['hub_r'] + 0.5 > HOUSE_H + 2:
+        raise RuntimeError('crank hub sits above the housing')
+    if g['crank_p'][1] - CRANK_HUB_R < FORK_TOP + 1.2:     # 0.9 of fork tilt plus 0.3
+        raise RuntimeError('crank hub reaches down to the fork')
     if g['spring_x0'] < g['x_pw'] - g['pw'] - 0.5:
         raise RuntimeError('spring does not fit the pocket width')
     return g
@@ -844,15 +881,52 @@ def front_crank_pin(g, phi):
     return (yp + CRANK_L2 * math.cos(a), zp + CRANK_L2 * math.sin(a))
 
 
+def front_stop_pts(g):
+    """(y, z) outline of the stop block behind the down-arm at full press: its front face is the arm's leading edge
+    there, and it stands on the tunnel roof against the housing's back wall."""
+    yp, zp = g['crank_p']
+    a = g['a0'] + math.pi / 2 + g['swing']
+    d, n = (math.cos(a), math.sin(a)), (-math.sin(a), math.cos(a))
+
+    def edge(t):
+        return (yp + t * d[0] + CRANK_W / 2 * n[0], zp + t * d[1] + CRANK_W / 2 * n[1])
+    p0, p1 = edge(4.6), edge(CRANK_L2 + 1.9)
+    yb = g['crank_y_back'] + 0.01
+    return [p0, p1, (p1[0], g['roof_top'] - 0.01), (yb, g['roof_top'] - 0.01), (yb, p0[1])]
+
+
+def x_hole(ctx, body, x0, x1, y, z, d, name):
+    """Cut a round hole along X from x0 to x1 at (y, z)."""
+    sk = ctx.root.sketches.add(yz_plane(ctx, x0))
+    sk.name = name
+    sk.isVisible = False
+    sk.sketchCurves.sketchCircles.addByCenterRadius(sk.modelToSketchSpace(P3.create(x0 * MM, y * MM, z * MM)), d / 2 * MM)
+    ext = ctx.root.features.extrudeFeatures
+    for direction in (adsk.fusion.ExtentDirections.PositiveExtentDirection, adsk.fusion.ExtentDirections.NegativeExtentDirection):
+        ei = ext.createInput(sk.profiles.item(0), adsk.fusion.FeatureOperations.CutFeatureOperation)
+        ei.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(VI.createByReal((x1 - x0) * MM)), direction)
+        ei.participantBodies = [body]
+        try:
+            f = ext.add(ei)
+        except RuntimeError:
+            continue
+        probe = P3.create((x0 + (x1 - x0) / 2) * MM, y * MM, z * MM)
+        if body.pointContainment(probe) != adsk.fusion.PointContainment.PointInsidePointContainment:
+            f.name = name
+            return f
+        f.deleteMe()
+    raise RuntimeError('hole failed: ' + name)
+
+
 def front_cuts(ctx, body, w, h, cx, cy):
-    """Housing (joined), groove, spring pocket, blade bay, ear channel, pusher tunnel, pin slot, lever pocket, pivot
-    post, crank slot and axle hole."""
+    """Housing (joined), groove, spring pocket, blade bay, ear channel, pusher tunnel and roof slot, pin slot, lever
+    pocket, pivot post, crank slot, stop block and axle holes."""
     g = front_geometry(w, h, cx, cy)
     sp, cut = g['sp'], adsk.fusion.FeatureOperations.CutFeatureOperation
     join = adsk.fusion.FeatureOperations.JoinFeatureOperation
     px, py = g['pivot']
     th, zb, yo = g['th'], g['z_gb'], g['y_o']
-    box(ctx, 'Lever Housing', g['x_pw'] + 0.5, g['house_x1'], yo, yo + HOUSE_D, 0, TRAY_H, join, body)
+    box(ctx, 'Lever Housing', g['x_pw'] + 0.5, g['house_x1'], yo, yo + HOUSE_D, 0, HOUSE_H, join, body)
     x0, x1 = g['xb'] - SLED_W - 0.3, g['xb'] + 0.3
     box(ctx, 'Sled Groove', x0, x1, g['y_gf'], g['y_pb'] + WALL + 1, zb, FLOOR, cut, body)
     box(ctx, 'Spring Pocket', g['spring_x0'], x1, g['y_gf'], g['y_sf'] + HEADER_T + 0.5, zb, FLOOR, cut, body)
@@ -861,19 +935,21 @@ def front_cuts(ctx, body, w, h, cx, cy):
     tz0, tz1 = BTN_Z0 - TUN_CLR[1], BTN_Z0 + BTN_H + TUN_CLR[2]
     c, xr, hw = TUN_CLR[0], g['xr'], PUSH_W / 2
     # pusher tunnel: wide front section (open at the front face to slide the pusher in), then the bar
-    box(ctx, 'Pusher Tunnel Front', xr - hw - c, g['fork_x'][1] + c, yo - 1, g['jog_y'] + g['push'] + 0.5, tz0, tz1, cut, body)
+    box(ctx, 'Pusher Tunnel Front', xr - hw - c, g['fork_x'][1] + c, yo - 1, g['jog_y'] + g['push'] + 0.5, tz0, g['tz1_front'],
+        cut, body)
     box(ctx, 'Pusher Tunnel', xr - hw - c, xr + hw + c, g['jog_y'] - 1, g['rear_y'] + g['push'] + 0.5, tz0, tz1, cut, body)
+    # closed slot through the roof for the fork (bounded by the housing's outer wall on +x)
+    box(ctx, 'Fork Slot', g['fork_x'][0] - PUSH_GAP, g['slot_x1'], g['fork_y'][0] - 0.4, g['fork_y'][1] + g['push'] + 0.4,
+        g['tz1_front'] - 0.01, g['roof_top'] + 0.01, cut, body)
     # curved slot through the tunnel roof for the short-arm pin
     rs = g['rp_in'] + 0.3
     m = math.asin(rs / FL_R_IN) + math.radians(2)
     sk = ctx.sketch(tz1 - 0.01, 'Input Pin Slot')
     polygon(sk, annulus_pts(g['pivot'], FL_R_IN - rs, FL_R_IN + rs, -th - m, th + m))
     ctx.extrude(sk.profiles.item(0), ROOF_T + 0.22, cut, 'Input Pin Slot', body)   # through the roof only
-    # lever pocket, open to the floor: hub plus each arm (0.5 mm oversize) at nine points across its swing
+    # lever pocket, open to the floor: hub plus one outline per arm for its whole swing
     zl = g['lever_z0'] - 0.2
     sk = ctx.sketch(zl, 'Lever Pocket')
-    # hub circle plus one outline per arm for its whole swing (18 overlapping stadiums left near-coincident edges
-    # that broke the boolean)
     sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(px * MM, py * MM, 0), (g['hub_r'] + 0.9) * MM)
     for r_arm, mid, wd in ((FL_R_IN, 0.0, PIN_D_IN + 2 * PIN_PAD), (FL_R_OUT, math.pi, max(LEVER_W, PIN_D_OUT + 2 * PIN_PAD))):
         polygon(sk, sweep_pts(g['pivot'], r_arm, mid - th, mid + th, (wd + 1.0) / 2))
@@ -884,29 +960,33 @@ def front_cuts(ctx, body, w, h, cx, cy):
     sk = ctx.sketch(zl, 'Pivot Post')
     sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(px * MM, py * MM, 0), PIVOT_D / 2 * MM)
     ctx.extrude(sk.profiles.item(0), g['lever_z0'] + LEVER_T - zl, join, 'Pivot Post', body)
-    # crank slot through the housing: open at the top (drop the crank in) and at the front (tab swing)
+    # crank slot above the roof: open at the top (drop the crank in) and at the front (pad swing)
     yp, zp = g['crank_p']
-    y_back = max(g['fork_y'][1] + g['push'], yp + 4.5) + 0.8
-    box(ctx, 'Crank Slot', g['x_ow'], g['slot_x1'], yo - 1, y_back, g['crank_zlo'] - 0.5, TRAY_H + 1, cut, body)
-    # axle hole: through the outer housing wall, blind 2 mm into the right wall
-    sk = ctx.root.sketches.add(yz_plane(ctx, g['x_ow'] - 2.0))
-    sk.name = 'Axle Hole'
+    box(ctx, 'Crank Slot', g['x_ow'], g['slot_x1'], yo - 1, g['crank_y_back'], g['roof_top'], TRAY_H + 1, cut, body)
+    # stop block for the down-arm at full press, in the crank band only (the fork runs beside it)
+    sk = ctx.root.sketches.add(yz_plane(ctx, g['x_ow'] - 0.01))
+    sk.name = 'Crank Stop'
     sk.isVisible = False
-    sk.sketchCurves.sketchCircles.addByCenterRadius(sk.modelToSketchSpace(P3.create((g['x_ow'] - 2.0) * MM, yp * MM, zp * MM)),
-                                                    (AXLE_D / 2 + 0.1) * MM)
+    sp_ = [sk.modelToSketchSpace(P3.create((g['x_ow'] - 0.01) * MM, y * MM, z * MM)) for y, z in front_stop_pts(g)]
+    L = sk.sketchCurves.sketchLines
+    first = prev = None
+    for i in range(len(sp_)):
+        prev = L.addByTwoPoints(prev.endSketchPoint if prev else sp_[0], first.startSketchPoint if i == len(sp_) - 1 else sp_[i + 1])
+        first = first or prev
     ext = ctx.root.features.extrudeFeatures
     for direction in (adsk.fusion.ExtentDirections.PositiveExtentDirection, adsk.fusion.ExtentDirections.NegativeExtentDirection):
-        ei = ext.createInput(sk.profiles.item(0), cut)
-        ei.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(VI.createByReal((g['house_x1'] - g['x_ow'] + 3) * MM)), direction)
+        ei = ext.createInput(sk.profiles.item(0), join)
+        ei.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(VI.createByReal((g['crank_x'][1] - g['x_ow'] + 0.01) * MM)), direction)
         ei.participantBodies = [body]
         f = ext.add(ei)
-        bb = f.bodies.item(0).boundingBox if f.bodies.count else None
-        # keep the direction that cut toward +X (the housing), undo the other
-        probe = adsk.core.Point3D.create((g['house_x1'] - 0.5) * MM, yp * MM, zp * MM)
-        if body.pointContainment(probe) != adsk.fusion.PointContainment.PointInsidePointContainment:
-            f.name = 'Axle Hole'
+        probe = P3.create((g['x_ow'] + 1.0) * MM, (front_stop_pts(g)[3][0] - 0.5) * MM, (g['roof_top'] + 0.5) * MM)
+        if body.pointContainment(probe) == adsk.fusion.PointContainment.PointInsidePointContainment:
+            f.name = 'Crank Stop'
             break
         f.deleteMe()
+    # axle: free bore through the slot and blind into the right wall, press fit in the outer wall
+    x_hole(ctx, body, g['x_ow'] - AXLE_BLIND, g['slot_x1'] + 0.01, yp, zp, AXLE_FREE, 'Axle Bore')
+    x_hole(ctx, body, g['slot_x1'], g['house_x1'] + 0.5, yp, zp, AXLE_D, 'Axle Press Hole')
     return g
 
 
@@ -943,8 +1023,19 @@ def yz_body(ctx, x, dist, loops, name):
     raise RuntimeError('yz_body failed: ' + name)
 
 
+def rect_along(c, a, u0, u1, half):
+    """(y, z) rectangle along direction a (rad) from c, from u0 to u1 out, half-width `half`."""
+    d, n = (math.cos(a), math.sin(a)), (-math.sin(a), math.cos(a))
+    return [(c[0] + u * d[0] + v * n[0], c[1] + u * d[1] + v * n[1]) for u, v in ((u0, -half), (u1, -half), (u1, half), (u0, half))]
+
+
+def combine(ctx, target, tools):
+    ctx.root.features.combineFeatures.add(ctx.root.features.combineFeatures.createInput(
+        target, adsk.core.ObjectCollection.createWithArray(tools)))
+
+
 def build_front_mechanism(ctx, lbl, w, h, cx, cy):
-    """Sled, straight lever, pusher, crank and axle, all at rest."""
+    """Sled, straight lever, pusher, fork, crank and axle, all at rest."""
     g = front_geometry(w, h, cx, cy)
     sp, zb, th = g['sp'], g['z_gb'], g['th']
     new = adsk.fusion.FeatureOperations.NewBodyFeatureOperation
@@ -997,49 +1088,164 @@ def build_front_mechanism(ctx, lbl, w, h, cx, cy):
     fi.edgeSetInputs.addConstantRadiusEdgeSet(roots, VI.createByReal(PIN_FILLET * MM), True)
     fl.add(fi).name = lbl + ' Pin Root Fillets'
 
-    # pusher at rest: wide front section with the fork, bar back to the yoke slot
+    # pusher at rest: wide front section with a socket for the fork's stem, bar back to the yoke slot
     xr, hw, z0, z1 = g['xr'], PUSH_W / 2, BTN_Z0, BTN_Z0 + BTN_H
     push = box(ctx, lbl + ' Pusher', xr - hw, g['fork_x'][1], g['fork_y'][0], g['jog_y'], z0, z1, new).bodies.item(0)
     push.name = lbl + ' Front Pusher'
     box(ctx, lbl + ' Pusher Bar', xr - hw, xr + hw, g['jog_y'] - 1, g['rear_y'], z0, z1, join, push)
-    box(ctx, lbl + ' Pusher Fork', g['fork_x'][0], g['fork_x'][1], g['fork_y'][0], g['fork_y'][1], z0, FORK_TOP, join, push)
-    yc = g['cpin0'][0]
-    box(ctx, lbl + ' Fork Slot', g['fork_x'][0] - 0.1, g['fork_x'][1] + 0.1, yc - CRANK_PIN_D / 2 - 0.2, yc + CRANK_PIN_D / 2 + 0.2,
-        g['fork_slot_z0'], FORK_TOP + 0.1, cut, push)
+    box(ctx, lbl + ' Fork Socket', g['fork_x'][0] - SOCKET_CLR, g['fork_x'][1] + 0.1, g['stem_y'][0] - SOCKET_CLR,
+        g['stem_y'][1] + SOCKET_CLR, z0 - 0.1, z1 + 0.1, cut, push)
     box(ctx, lbl + ' Pusher Slot', g['slot_x'][0], g['slot_x'][1], g['slot_y'] - g['rp_in'], g['slot_y'] + g['rp_in'],
         z0 - 0.1, z1 + 0.1, cut, push)
 
-    # crank at rest: hub, tab arm with a finger pad, down-arm with a pin toward the fork
-    yp, zp = g['crank_p']
-    cp, tab = g['cpin0'], g['tab0']
-    pad = rounded_rect_pts(tab[0] - 2.0, tab[1] - 3.5, 12.0, 7.0, 2.5, 2.5)
-    loops = [('circle', (yp, zp), 4.5), stadium_pts((yp, zp), tab, CRANK_W), stadium_pts((yp, zp), cp, CRANK_W), pad]
-    crank = yz_body(ctx, g['crank_x'][0], CRANK_T, loops, lbl + ' Front Crank')
-    sk = ctx.root.sketches.add(yz_plane(ctx, g['crank_x'][0]))
-    sk.isVisible = False
-    sk.sketchCurves.sketchCircles.addByCenterRadius(sk.modelToSketchSpace(P3.create(g['crank_x'][0] * MM, yp * MM, zp * MM)),
-                                                    (AXLE_D / 2 + 0.2) * MM)
-    for direction in (adsk.fusion.ExtentDirections.PositiveExtentDirection, adsk.fusion.ExtentDirections.NegativeExtentDirection):
-        ei = ctx.root.features.extrudeFeatures.createInput(sk.profiles.item(0), cut)
-        ei.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(VI.createByReal((CRANK_T + 1) * MM)), direction)
-        ei.participantBodies = [crank]
-        try:
-            ctx.root.features.extrudeFeatures.add(ei).name = lbl + ' Crank Axle Hole'
-            break
-        except RuntimeError:
-            continue
-    pin = yz_body(ctx, g['crank_x'][1] - 0.01, g['fork_x'][1] - 0.1 - g['crank_x'][1] + 0.01,   # ends inside the fork
-                  [('circle', cp, CRANK_PIN_D / 2)], lbl + ' Crank Pin')
-    ctx.root.features.combineFeatures.add(ctx.root.features.combineFeatures.createInput(crank, adsk.core.ObjectCollection.createWithArray([pin])))
-    crank.name = lbl + ' Front Crank'
+    fork = build_fork(ctx, g, lbl + ' Front Fork')
 
-    # axle: head outside the housing, shank through the crank into the right wall
-    shank = g['house_x1'] - (g['x_ow'] - 2.0) - 0.2
-    axle = yz_body(ctx, g['x_ow'] - 1.8, shank, [('circle', (yp, zp), AXLE_D / 2)], lbl + ' Crank Axle')
+    # crank at rest: hub, tab arm, down-arm with a pin toward the fork, and a finger pad
+    yp, zp = g['crank_p']
+    cp, a0 = g['cpin0'], g['a0']
+    tab = g['tab0']
+    loops = [('circle', (yp, zp), CRANK_HUB_R), stadium_pts((yp, zp), tab, CRANK_W), stadium_pts((yp, zp), cp, CRANK_W)]
+    crank = yz_body(ctx, g['crank_x'][0], CRANK_T, loops, lbl + ' Front Crank')
+    pad = yz_body(ctx, g['crank_x'][0], PAD[0], [rect_along((yp, zp), a0, g['pad_u'][0], g['pad_u'][1] + CRANK_W / 2, CRANK_W / 2)],
+                  lbl + ' Crank Pad')
+    pin = yz_body(ctx, g['crank_x'][1] - 0.01, g['fork_x'][1] - 0.1 - g['crank_x'][1] + 0.01, [('circle', cp, CRANK_PIN_D / 2)],
+                  lbl + ' Crank Pin')
+    hub = yz_body(ctx, g['crank_x'][1] - 0.01, g['fork_x'][1] - g['crank_x'][1] + 0.01, [('circle', (yp, zp), CRANK_HUB_R)],
+                  lbl + ' Crank Hub')
+    combine(ctx, crank, [pad, pin, hub])
+    crank.name = lbl + ' Front Crank'
+    x_hole(ctx, crank, g['crank_x'][0] - 0.5, g['fork_x'][1] + 0.5, yp, zp, AXLE_FREE, lbl + ' Crank Axle Hole')
+    chamfer_circles(ctx, crank, 'x', g['crank_x'][0], AXLE_FREE / 2, 0.4, lbl + ' Crank bore chamfer')   # bed side
+    roots = adsk.core.ObjectCollection.create()
+    for e in crank.edges:
+        c = adsk.core.Circle3D.cast(e.geometry)
+        if c and abs(c.center.x - g['crank_x'][1] * MM) < 1e-4 and abs(c.radius - CRANK_PIN_D / 2 * MM) < 1e-4:
+            roots.add(e)
+    if roots.count:
+        fi = ctx.root.features.filletFeatures.createInput()
+        fi.edgeSetInputs.addConstantRadiusEdgeSet(roots, VI.createByReal(PIN_FILLET * MM), True)
+        ctx.root.features.filletFeatures.add(fi).name = lbl + ' Crank Pin Root Fillet'
+
+    # axle: shank from the blind hole through the outer wall, with a head; a 0.4 mm flat so it prints lying down
+    shank = g['house_x1'] - (g['x_ow'] - AXLE_BLIND) + 0.2               # overlaps the head so they join
+    axle = yz_body(ctx, g['x_ow'] - AXLE_BLIND + 0.1, shank, [('circle', (yp, zp), AXLE_D / 2)], lbl + ' Crank Axle')
     head = yz_body(ctx, g['house_x1'], 1.5, [('circle', (yp, zp), AXLE_D / 2 + 1.5)], lbl + ' Axle Head')
-    ctx.root.features.combineFeatures.add(ctx.root.features.combineFeatures.createInput(axle, adsk.core.ObjectCollection.createWithArray([head])))
+    combine(ctx, axle, [head])
+    ua = math.radians(AXLE_FLAT_DIR)
+    u, v, r0 = (math.cos(ua), math.sin(ua)), (-math.sin(ua), math.cos(ua)), AXLE_D / 2 - 0.4
+    flat = [(yp + u[0] * a + v[0] * b, zp + u[1] * a + v[1] * b) for a, b in ((r0, -6), (r0 + 6, -6), (r0 + 6, 6), (r0, 6))]
+    xa = g['x_ow'] - AXLE_BLIND - 1
+    cutter = yz_body(ctx, xa, g['house_x1'] + 3 - xa, [flat], lbl + ' axle flat cutter')
+    ctx.root.features.combineFeatures.add(_cut_input(ctx, axle, cutter))
     axle.name = lbl + ' Crank Axle'
-    return sled, lever, push, crank, axle, g
+    return sled, lever, push, fork, crank, axle, g
+
+
+def deboss_top(ctx, body, text, x, y, z, h, name):
+    """Small debossed text on a top face at height z, centred on (x, y), reading along +X."""
+    sk = ctx.sketch(z, name)
+    ti = sk.sketchTexts.createInput2(text, h * MM)
+    ti.setAsMultiLine(P3.create((x - 15) * MM, (y - h) * MM, 0), P3.create((x + 15) * MM, (y + h) * MM, 0),
+                      adsk.core.HorizontalAlignments.CenterHorizontalAlignment,
+                      adsk.core.VerticalAlignments.MiddleVerticalAlignment, 0)
+    ti.fontName = 'Arial Black'
+    txt = sk.sketchTexts.add(ti)
+    ctx.extrude(txt, 0.4, adsk.fusion.FeatureOperations.CutFeatureOperation, name, body, negative=True)
+
+
+def build_front_coupons(ctx, lbl, w, h, cx, cy):
+    """A/B pieces for the parts the review could not settle, printed with the prototype (placed clear of it):
+    A housing corner at other roof clearances, B pusher stubs with other socket clearances (with forks),
+    C press-fit holes for the axle and crank bores."""
+    new = adsk.fusion.FeatureOperations.NewBodyFeatureOperation
+    cut = adsk.fusion.FeatureOperations.CutFeatureOperation
+    G = globals()
+    W, H = dims(w, h)
+    ox = cx + W / 2 + 40
+    # A: whole trays built at the other roof values (the crank rises with the roof), cut down to the front-right corner
+    keep_vals = (G['TUN_TOP_FRONT'], G['CRANK_PIN_Z'])
+    try:
+        for i, v in enumerate(COUPON_ROOF):
+            G['TUN_TOP_FRONT'], G['CRANK_PIN_Z'] = v, keep_vals[1] + (v - keep_vals[0])
+            x_c = ox + 100 * i
+            t = build_tray(ctx, lbl, w, h, x_c, cy)
+            g = front_geometry(w, h, x_c, cy)
+            k = box(ctx, 'coupon A keep', g['x_ow'] - 14, g['house_x1'] + 1, g['y_o'] - 1, g['y_o'] + 36, -0.1, 12, new).bodies.item(0)
+            ci = ctx.root.features.combineFeatures.createInput(t, adsk.core.ObjectCollection.createWithArray([k]))
+            ci.operation = adsk.fusion.FeatureOperations.IntersectFeatureOperation
+            ctx.root.features.combineFeatures.add(ci)
+            t.name = '%s Coupon A roof %.1f' % (lbl, v)
+            side_label(ctx, t, g['x_ow'] - 14, 'A %.1f' % v, 5.0, g['y_o'] + 3, g['y_o'] + 33, 1.5, t.name + ' label')
+    finally:
+        G['TUN_TOP_FRONT'], G['CRANK_PIN_Z'] = keep_vals
+    g = front_geometry(w, h, cx, cy)
+    z0, z1 = BTN_Z0, BTN_Z0 + BTN_H
+    # B: front sections of the pusher, with a fork for each
+    for i, c in enumerate(COUPON_SOCKET):
+        dx, dy = ox - cx + 100 * i, -70.0
+        x0, x1 = g['xr'] - PUSH_W / 2 + dx, g['fork_x'][1] + dx
+        n = '%s Coupon B socket %.2f' % (lbl, c)
+        b = box(ctx, n, x0, x1, g['fork_y'][0] + dy, g['jog_y'] + 3 + dy, z0, z1, new).bodies.item(0)
+        b.name = n
+        box(ctx, n + ' socket', g['fork_x'][0] - c + dx, x1 + 0.1, g['stem_y'][0] - c + dy, g['stem_y'][1] + c + dy, z0 - 0.1, z1 + 0.1,
+            cut, b)
+        deboss_top(ctx, b, '%.2f' % c, (x0 + g['fork_x'][0] - c + dx) / 2, (g['fork_y'][0] + g['jog_y'] + 3) / 2 + dy, z1, 3.0, n + ' label')
+        build_fork(ctx, g, '%s Coupon B fork %d' % (lbl, i + 1), dx, dy + 25)
+    # C: a 2.4 mm fin (the housing's outer wall) with horizontal press holes, 2.7 mm of fin over each as in the housing
+    yc0, x0 = cy - 120.0, ox
+    zc = 1.6 + 6.0
+    fin_top = zc + max(COUPON_PRESS) / 2 + 2.7
+    n = lbl + ' Coupon C press holes'
+    fin = box(ctx, n, x0, x0 + HOUSE_WALL, yc0, yc0 + 12 * len(COUPON_PRESS), 0, fin_top, new).bodies.item(0)
+    box(ctx, n + ' foot', x0, x0 + HOUSE_WALL + 9.6, yc0, yc0 + 12 * len(COUPON_PRESS), 0, 1.6,
+        adsk.fusion.FeatureOperations.JoinFeatureOperation, fin)
+    fin.name = n
+    for i, d in enumerate(COUPON_PRESS):
+        y = yc0 + 6 + 12 * i
+        x_hole(ctx, fin, x0 - 0.5, x0 + HOUSE_WALL + 0.5, y, zc, d, '%s %.1f' % (n, d))
+        deboss_top(ctx, fin, '%.1f' % d, x0 + HOUSE_WALL + 4.8, y, 1.6, 3.0, '%s %.1f label' % (n, d))
+    # C: crank bores, as long as the crank's hub
+    hub_len = g['fork_x'][1] - g['crank_x'][0]
+    n = lbl + ' Coupon C crank bores'
+    x0 = ox + 30
+    blk = box(ctx, n, x0, x0 + 14, yc0, yc0 + 13 * len(COUPON_BORE), 0, hub_len, new).bodies.item(0)
+    blk.name = n
+    for i, d in enumerate(COUPON_BORE):
+        y = yc0 + 6.5 + 13 * i
+        sk = ctx.sketch(0, '%s %.1f' % (n, d))
+        sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create((x0 + 3.5) * MM, y * MM, 0), d / 2 * MM)
+        ctx.extrude(sk.profiles.item(0), hub_len, cut, '%s %.1f' % (n, d), blk)
+        chamfer_circles(ctx, blk, 'z', 0, d / 2, 0.4, '%s %.1f chamfer' % (n, d))   # bed side, as on the crank
+        deboss_top(ctx, blk, '%.1f' % d, x0 + 9.6, y, hub_len, 3.0, '%s %.1f label' % (n, d))
+
+
+def build_fork(ctx, g, name, dx=0.0, dy=0.0):
+    """Fork part at rest (shifted dx, dy): plate on the pusher, stem down through its socket, round-bottom slot
+    with a relief on the bed face (-X)."""
+    z0, z1 = BTN_Z0, BTN_Z0 + BTN_H
+    yc = g['cpin0'][0] + dy
+    rsl = CRANK_PIN_D / 2 + 0.2
+    zs = g['fork_slot_z0'] + rsl
+    fy, sy = (g['fork_y'][0] + dy, g['fork_y'][1] + dy), (g['stem_y'][0] + dy, g['stem_y'][1] + dy)
+
+    def slot(r):
+        return [(yc - r, FORK_TOP + 0.5), (yc - r, zs)] + \
+               [(yc + r * math.cos(math.radians(a)), zs + r * math.sin(math.radians(a))) for a in range(190, 360, 15)] + \
+               [(yc + r, zs), (yc + r, FORK_TOP + 0.5)]
+    outline = [(fy[0], z1), (sy[0], z1), (sy[0], z0), (sy[1], z0), (sy[1], z1), (fy[1], z1), (fy[1], FORK_TOP), (fy[0], FORK_TOP)]
+    x0 = g['fork_x'][0] + dx
+    fork = yz_body(ctx, x0, FORK_T, [outline], name)
+    for cx0, depth, r in ((x0 - 0.5, FORK_T + 1.0, rsl), (x0 - 0.5, 0.5 + FORK_RELIEF, rsl + FORK_RELIEF)):
+        cutter = yz_body(ctx, cx0, depth, [slot(r)], name + ' slot cutter')
+        ctx.root.features.combineFeatures.add(_cut_input(ctx, fork, cutter))
+    fork.name = name
+    return fork
+
+
+def _cut_input(ctx, target, tool):
+    ci = ctx.root.features.combineFeatures.createInput(target, adsk.core.ObjectCollection.createWithArray([tool]))
+    ci.operation = adsk.fusion.FeatureOperations.CutFeatureOperation
+    return ci
 
 
 def xz_prism(ctx, name, pts, y0, y1, op, body):
@@ -1169,6 +1375,7 @@ def build_tray(ctx, lbl, w, h, cx, cy):
                 P3.create((cx + sx * MAGNET_DX) * MM, (cy - H / 2 + MAGNET_Y) * MM, 0), MAGNET_D / 2 * MM)
             ctx.extrude(sk.profiles.item(0), MAGNET_T, adsk.fusion.FeatureOperations.CutFeatureOperation,
                         n + ' Magnet', body)
+        magnet_chamfers(ctx, body, n)
     if DISPENSER in ('button', 'front'):
         # the size again, big and bold, on the left wall above the floor (the right wall carries the button)
         z_mid = (FLOOR + TRAY_H - REB) / 2
@@ -1202,6 +1409,33 @@ def build_tray(ctx, lbl, w, h, cx, cy):
     return body
 
 
+def chamfer_circles(ctx, body, axis, at, r, size, name):
+    """Equal chamfer on the circular edges of radius r whose centres lie on the plane axis = at ('x' or 'z')."""
+    edges = adsk.core.ObjectCollection.create()
+    for e in body.edges:
+        c = adsk.core.Circle3D.cast(e.geometry)
+        if c and abs(getattr(c.center, axis) - at * MM) < 1e-5 and abs(c.radius - r * MM) < 1e-4:
+            edges.add(e)
+    if not edges.count:
+        raise RuntimeError('no edges to chamfer: ' + name)
+    ci = ctx.root.features.chamferFeatures.createInput2()
+    ci.chamferEdgeSets.addEqualDistanceChamferEdgeSet(edges, VI.createByReal(size * MM), False)
+    ctx.root.features.chamferFeatures.add(ci).name = name
+
+
+def magnet_chamfers(ctx, body, n):
+    """0.4 mm chamfer on every magnet pocket mouth (the bed face): elephant's foot would narrow it."""
+    edges = adsk.core.ObjectCollection.create()
+    for e in body.edges:
+        c = adsk.core.Circle3D.cast(e.geometry)
+        if c and abs(c.center.z) < 1e-6 and abs(c.radius - MAGNET_D / 2 * MM) < 1e-4:
+            edges.add(e)
+    if edges.count:
+        ci = ctx.root.features.chamferFeatures.createInput2()
+        ci.chamferEdgeSets.addEqualDistanceChamferEdgeSet(edges, VI.createByReal(MAGNET_CH * MM), False)
+        ctx.root.features.chamferFeatures.add(ci).name = n + ' Magnet chamfers'
+
+
 def build_lid(ctx, lbl, w, h, cx, cy):
     W, H = dims(w, h)
     n = lbl + ' Lid'
@@ -1226,6 +1460,7 @@ def build_lid(ctx, lbl, w, h, cx, cy):
             sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(x * MM, y * MM, 0), MAGNET_D / 2 * MM)
             ctx.extrude(sk.profiles.item(0), MAGNET_T, adsk.fusion.FeatureOperations.CutFeatureOperation,
                         n + ' Magnet', body)
+        magnet_chamfers(ctx, body, n)
     # Label on the outside (bed side while printing): reads correctly once flipped onto a tray
     bottom = next(f for f in body.faces if f.geometry.surfaceType == adsk.core.SurfaceTypes.PlaneSurfaceType
                   and abs(f.boundingBox.maxPoint.z) < 1e-6)
@@ -1276,12 +1511,14 @@ def run(_context: str):
         tray = build_tray(ctx, lbl, w, h, xs[lbl], 0)
         lid = build_lid(ctx, lbl, w, h, xs[lbl], LID_ROW_Y)
         if max(W, H) > BED:     # before the loose parts are built: the seam collects every body in the outline
-            split_seam(ctx, tray, xs[lbl], 0, W, H, lbl + ' Tray', SEAM_DY_BUTTON if DISPENSER == 'button' else 0.0)
+            split_seam(ctx, tray, xs[lbl], 0, W, H, lbl + ' Tray', SEAM_DY_BUTTON if DISPENSER in ('button', 'front') else 0.0)
             split_seam(ctx, lid, xs[lbl], LID_ROW_Y, W, H, lbl + ' Lid')
         if DISPENSER == 'button':
             build_button_mechanism(ctx, lbl, w, h, xs[lbl], 0)
         elif DISPENSER == 'front':
             build_front_mechanism(ctx, lbl, w, h, xs[lbl], 0)
+            if FRONT_COUPONS:
+                build_front_coupons(ctx, lbl, w, h, xs[lbl], 0)
         elif DISPENSER == 'side':
             build_mechanism(ctx, lbl, w, h, xs[lbl], 0)
             for i, key in enumerate(TEST_SPRINGS):      # shifted clear of the tray, for printing

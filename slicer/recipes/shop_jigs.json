@@ -14,6 +14,7 @@
   "changelog": [
     "2026-10-16  created for the acrylic corner drill guide: printed top-face down on smooth PEI (lips up), 4 walls so the 1/8 in guide hole is ringed in solid plastic",
     "2026-10-16  model: guide hole 1/8 in pilot -> 7.5 mm (the mounting hardware needs a 7.5 mm hole); 4 walls still ring it in solid plastic",
-    "2026-10-16  model: now a marking guide (2.5 mm awl/pen hole with a centring cone); holes are drilled afterwards with a step bit or a drill press, so nothing spinning touches the PLA"
+    "2026-10-16  model: now a marking guide (2.5 mm awl/pen hole with a centring cone); holes are drilled afterwards with a step bit or a drill press, so nothing spinning touches the PLA",
+    "2026-10-16  renamed drill_jigs -> shop_jigs (the acrylic guide is a marking guide now; later shop jigs such as a drill-press corner fence share it)"
   ]
 }

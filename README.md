@@ -215,8 +215,8 @@ its product page calls them standard and large. By size:
     hand. A spinning bit also wears and melts a PLA guide hole. Nothing spinning touches this one.
   - The lips are 2 mm deep, shorter than a 1/8 in sheet, so the guide sits flat with the sheet on the bench. A
     relief at the inside corner lets a burred corner seat.
-  - Print it top-face down, lips up, as exported (`drill_jigs` recipe). For another spacing or sheet thickness,
-    edit the constants at the top of `fusion/acrylic_drill_jig.py`.
+  - Print it top-face down, lips up, as exported (`shop_jigs` recipe). For another spacing or sheet thickness,
+    edit the constants at the top of `fusion/acrylic_marking_guide.py`.
 
 `fusion/o1_jigs.py` generates jigs for any flat rectangular item: add a line to `ITEMS`. `fusion/o1_frame.py`
 builds the small-plate frame halves, and `fusion/o1_clips.py` the clips for both plates.

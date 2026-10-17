@@ -127,7 +127,7 @@ testing, and every size from 2R to 8R now uses the same design.
 ![Slot stands and test comb](docs/images/photo-stands.png)
 
 - A 15° slot holds the plaque by its bottom edge. Bases reach about 15% of the plaque height behind the slot so
-  tall plaques don't tip. Each stand is labeled in inches on the back (2.5x3.5 up to 8x10).
+  tall plaques don't tip. Each stand carries the size of the blank it holds (2R to 8R) on the back in bold 9 mm letters, the same name as the blank and its tray.
 - Three styles on the same footprint:
   - **Minimal**: smooth with chamfered edges.
   - **Fluted**: vertical ribs across the front.

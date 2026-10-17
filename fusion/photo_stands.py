@@ -44,6 +44,7 @@ BASE_H = 14.0
 FRONT = 14.0                        # slot top centre, measured from the front edge
 CHAMFER = 2.0
 LABEL_D = 0.6
+BACK_LABEL_H = 9.0                  # blank size on the back face (12 mm flat under the chamfer); was 6 mm US inches
 MAX_LEN = 250.0                     # longest part that fits the P1S bed comfortably
 GAP = 20.0
 
@@ -162,7 +163,7 @@ def build_stand(root, lbl, us, w, h, x0, y0=0.0, style='Minimal', slot_w=None):
     body = extrude_along_y(root, largest_profile(sk), length, adsk.fusion.FeatureOperations.NewBodyFeatureOperation,
                            name='%s %s Stand' % (lbl, style)).bodies.item(0)
     body.name = ('%s Stand %s textured slot %.1f mm' % (lbl, style, test_w) if test_w
-                 else '%s Stand %s (%s in)' % (lbl, style, us))
+                 else '%s Stand %s' % (lbl, style))   # named for the blank it holds, like the trays
     if style in CLOSED_SLOT:
         slot_len = w + 2 * SLOT_END_CLR
         ys = y0 + (length - slot_len) / 2
@@ -189,8 +190,10 @@ def build_stand(root, lbl, us, w, h, x0, y0=0.0, style='Minimal', slot_w=None):
                             adsk.fusion.ExtentDirections.PositiveExtentDirection)
         ei.participantBodies = [body]
         ext.add(ei).name = '%s Fluted grooves' % lbl
-    face_label(root, body, x0 + depth, '%.1f' % test_w if test_w else us, 6.0, y0, y0 + length,
-               (BASE_H - CHAMFER) / 2 - 3.0)
+    # the blank size on the back in big, bold letters (it matches the blank and the trays); test stands get the width
+    lh = 6.0 if test_w else BACK_LABEL_H
+    face_label(root, body, x0 + depth, '%.1f' % test_w if test_w else lbl, lh, y0, y0 + length,
+               (BASE_H - CHAMFER) / 2 - lh / 2)
     return body
 
 

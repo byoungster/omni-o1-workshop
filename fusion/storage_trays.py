@@ -54,6 +54,7 @@ KERF = 0.25       # dovetail seam gap
 SEAM_DY_BUTTON = -40.0   # button trays: seam 40 mm in front of centre, clear of the lever, button and sled ear
                          # (all at mid depth) and behind the spring pocket; it crosses only the straight groove
 LABEL_D = 0.6
+SIDE_LABEL_H = 16.0   # big size label on the left outer wall of button trays (the front stop only fits 5 mm)
 TICK_D = 0.4
 GAP = 25.0
 LID_ROW_Y = -330.0
@@ -304,6 +305,26 @@ def face_text(ctx, sk, text, h, x0, x1, z, y, align):
     ti.fontName = 'Arial Black'
     ti.setAsAlongPath(path, True, align, 0)
     return sk.sketchTexts.add(ti)
+
+
+def side_label(ctx, body, x_face, text, h, y_front, y_back, z, name):
+    """Deboss text on the left outer wall (normal -X at x_face), reading left to right from outside."""
+    face = next(f for f in body.faces if f.geometry.surfaceType == adsk.core.SurfaceTypes.PlaneSurfaceType
+                and f.evaluator.getNormalAtPoint(f.pointOnFace)[1].x < -0.99
+                and abs(f.pointOnFace.x - x_face * MM) < 1e-6)
+    sk = ctx.root.sketches.add(face)
+    sk.name = name
+    sk.isVisible = False
+    # seen from -X with +Z up, left to right runs toward -Y: from the back to the front
+    a = sk.modelToSketchSpace(P3.create(x_face * MM, y_back * MM, z * MM))
+    b = sk.modelToSketchSpace(P3.create(x_face * MM, y_front * MM, z * MM))
+    path = sk.sketchCurves.sketchLines.addByTwoPoints(a, b)
+    path.isConstruction = True
+    ti = sk.sketchTexts.createInput3("'%s'" % text, VI.createByReal(h * MM))
+    ti.fontName = 'Arial Black'
+    ti.setAsAlongPath(path, True, adsk.core.HorizontalAlignments.CenterHorizontalAlignment, 0)
+    txt = sk.sketchTexts.add(ti)
+    ctx.extrude(txt, LABEL_D, adsk.fusion.FeatureOperations.CutFeatureOperation, name, body, negative=True)
 
 
 def split_seam(ctx, body, cx, cy, W, H, name, dy=0.0):
@@ -832,6 +853,10 @@ def build_tray(ctx, lbl, w, h, cx, cy):
                     adsk.core.HorizontalAlignments.CenterHorizontalAlignment)
     ctx.extrude(txt, LABEL_D, adsk.fusion.FeatureOperations.CutFeatureOperation, n + ' Label', body, negative=True)
     if DISPENSER == 'button':
+        # the size again, big and bold, on the left wall above the floor (the right wall carries the button)
+        z_mid = (FLOOR + TRAY_H - REB) / 2
+        side_label(ctx, body, cx - W / 2, lbl, SIDE_LABEL_H, cy - H / 2 + R_OUT, cy + H / 2 - R_OUT,
+                   z_mid - SIDE_LABEL_H / 2, n + ' Side Label')
         return body
 
     sk = ctx.root.sketches.add(right)

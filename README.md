@@ -174,6 +174,14 @@ its product page calls them standard and large. By size:
 - Jigs cover the print area and are cut into tiles that fit a 256 mm printer bed, with seams placed in the walls
   between pockets where possible. Butt the tiles together on the plate (or glue them with CA).
 - Print in **matte black** PLA: plain and matte so the O1's scan picks out the white blanks.
+- **12x12 in acrylic sheet (large plate):** a frame, not a pocket plate. The sheet lies on the mat, centred,
+  inside a 2.7 mm frame. The frame is thinner than any 1/8 in sheet (they measure 2.8–3.2 mm), so the O1's
+  height sensing lands on the acrylic.
+  - The opening is 304.8 mm + 0.3% for the frame's shrink + 0.2 mm per side. There's a finger notch at the
+    front.
+  - Four L-shaped tiles (two plates) butt together inside the edge clips' window. With no floor it takes about
+    120 g, not a 300 g slab.
+  - It comes from the same generator: an `ITEMS` line with `{'floor': 0.0}`.
 - Calibrate once: tape over the jig, print the template, measure the offset, correct it in xTool Studio.
 - **Clips that lock frames to the plate:** straight C-clips, each printed lying on its C profile. Both jaws are
   part of the flat outline, so there are no overhangs and no supports, and the jaws bend along the layers, the

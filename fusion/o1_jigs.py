@@ -11,6 +11,9 @@ where they crossed pockets and finger notches.
 Matte, plain, contrasting jig colour (matte black for white blanks). Items that are themselves
 3D printed shrink like the jig, so no shrink compensation is applied; for bought blanks (slate,
 acrylic, metal) add ~0.3% to the item size. Always builds into a new document.
+
+Big single items (a 12x12 in acrylic sheet) get a frame instead (floor 0): the item lies on the mat inside a
+frame a little thinner than the item, so the jig takes ~130 g instead of a 300 g slab.
 """
 import math
 
@@ -31,7 +34,7 @@ NOTCH_R = 7.0        # finger notch radius
 MAX_TILE = 250.0     # longest tile side that fits the P1S comfortably
 GAP = 40.0           # spacing between jigs in the document
 
-# name, item width, item height, item thickness (mm), beds to make it for
+# name, item width, item height, item thickness (mm), beds to make it for[, options: floor]
 ITEMS = [
     ('2R photo blank', 64, 89, 1.0, ('Small', 'Large')),
     ('3R photo blank', 89, 127, 1.0, ('Small', 'Large')),
@@ -39,6 +42,9 @@ ITEMS = [
     ('5R photo blank', 127, 178, 1.0, ('Large',)),
     ('6R photo blank', 152, 203, 1.0, ('Large',)),
     ('8R photo blank', 203, 254, 1.0, ('Large',)),
+    # bought sheet: +0.3% for the jig's shrink; thickness is the thinnest 1/8 in sheet seen (2.8), so the
+    # frame stays below the sheet's top face and the O1's height sensing lands on the acrylic
+    ('12x12 in acrylic sheet', 304.8 * 1.003, 304.8 * 1.003, 2.8, ('Large',), {'floor': 0.0}),
 ]
 
 
@@ -99,10 +105,10 @@ def seam_pos(centres_, pocket, length):
     return min(ok, key=lambda w: abs(w - length / 2)) if ok else length / 2
 
 
-def build_jig(root, bed, item, w, h, t, x0, y0):
+def build_jig(root, bed, item, w, h, t, x0, y0, floor=FLOOR):
     count, nx, ny, pw, ph = layout(bed, w, h)
     bw, bh = BEDS[bed]
-    jig_t = FLOOR + t - PROUD
+    jig_t = floor + t - PROUD
     ext = root.features.extrudeFeatures
     name = '%s jig %s x%d' % (bed, item.replace(' photo blank', ''), count)
 
@@ -138,8 +144,12 @@ def build_jig(root, bed, item, w, h, t, x0, y0):
     for p in skp.profiles:
         profs.add(p)
     ei = ext.createInput(profs, adsk.fusion.FeatureOperations.CutFeatureOperation)
-    ei.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(VI.createByReal((t - PROUD) * MM)),
-                        adsk.fusion.ExtentDirections.NegativeExtentDirection)
+    if floor > 0:
+        ei.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(VI.createByReal((t - PROUD) * MM)),
+                            adsk.fusion.ExtentDirections.NegativeExtentDirection)
+    else:                         # frame: the item lies on the mat
+        ei.setOneSideExtent(adsk.fusion.ThroughAllExtentDefinition.create(),
+                            adsk.fusion.ExtentDirections.NegativeExtentDirection)
     ei.participantBodies = [body]
     ext.add(ei).name = name + ' Pockets'
 
@@ -189,9 +199,10 @@ def run(_context: str):
     root = des.rootComponent
     y = {'Small': 0.0, 'Large': BEDS['Small'][1] + GAP}
     x = {'Small': 0.0, 'Large': 0.0}
-    for item, w, h, t, beds in ITEMS:
+    for item, w, h, t, beds, *opts in ITEMS:
         for bed in beds:
-            name, count, nx, ny, ntiles, jig_t, walls = build_jig(root, bed, item, w, h, t, x[bed], y[bed])
+            name, count, nx, ny, ntiles, jig_t, walls = build_jig(root, bed, item, w, h, t, x[bed], y[bed],
+                                                                  **(opts[0] if opts else {}))
             print('%-26s %2d pockets (%dx%d)  %d tile(s)  %.1f mm thick  seams in: X %s / Y %s' % (
                 name, count, nx, ny, ntiles, jig_t, walls[0], walls[1]))
             x[bed] += BEDS[bed][0] + GAP

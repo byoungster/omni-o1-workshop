@@ -225,6 +225,12 @@ its product page calls them standard and large. By size:
 `fusion/o1_jigs.py` generates jigs for any flat rectangular item: add a line to `ITEMS`. `fusion/o1_frame.py`
 builds the small-plate frame halves, and `fusion/o1_clips.py` the clips for both plates.
 
+- **Large-plate corners (`fusion/o1_large_corners.py`):** four sit-on corner pieces hold the large-plate jigs and the
+  acrylic frames in place, instead of the edge clips.
+  - Each one hugs a plate corner with a 6 mm skirt, and its 1.6 mm lip on the mat stops at the 330 x 420 print
+    area (+0.3 mm).
+  - The two labelled TAB have a cut-out for the mat's peel tab; put them at the corners where the tab is.
+  - Print lip-down, as exported (`shop_jigs` recipe, about 19 g for all four).
 - **Labels:** every jig tile has its set and tile ID in bold on its underside (e.g. LARGE 4R x6 A1, 12X12 FRAME
   B2). Clips say LARGE or SMALL, and the small-plate frame halves say SMALL FRAME, so sets go back together
   after storage.

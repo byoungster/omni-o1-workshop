@@ -1,0 +1,227 @@
+"""Corner locators for the xTool O1 Omni large (standard) plate, 330 x 420 mm print area (Autodesk Fusion API script).
+
+They hold the large-plate jigs and the 12x12 / 12x16 acrylic frame tiles in place, instead of the edge clips.
+Restored from commit 1888915, with the plate size the user measured (344 x 434 x 16.6), labels, and the
+flipped export for printing.
+
+Four corner pieces drop over the plate's corners. Each hugs its corner with a skirt and a rounded corner, and
+a thin lip on the mat runs to the print area. Their inner edges form a window the size of the print area plus
+WIN_CLR, so a jig or an acrylic sheet cut to 330 x 420 drops in square. Corners rather than a full frame: four
+fit one 256 mm printer bed (a full frame round a ~344 x 434 plate would be about eight pieces), they stay clear
+of the plate's spring latch at mid-edge, and each one finds its own corner.
+
+Two shapes, two of each: the front-left piece (turned 180 degrees it is the rear-right) has a relief for the
+mat's pull tab, which sits on the right side near the rear and moves to the left front when the plate goes in
+the other way round; the front-right piece (turned, the rear-left) has none.
+
+Plate figures: 344 x 434 mm, 16.6 mm thick at the corners (user's measurements, 2026-10-15).
+Shown as used here; the export turns them upside down (lip on the bed, skirts up): no overhangs, no supports.
+Each piece is labelled on its lip. Always builds into a new document.
+"""
+import math
+
+import adsk.core, adsk.fusion
+
+VI = adsk.core.ValueInput
+P3 = adsk.core.Point3D
+MM = 0.1
+
+AREA = (330.0, 420.0)    # print area
+PLATE_W = 344.0          # plate top, left-right (third-party figures agree)
+PLATE_D = 434.0          # plate top, front-back (user measured 434)
+PLATE_R = 4.0            # corner radius (assumed same as the small plate)
+CLR = 0.4                # skirt clearance to the plate edge, all round
+WALL = 2.4               # skirt wall
+SKIRT_D = 6.0            # skirt depth down the plate edge
+LIP_T = 1.6              # lip on the mat: under the 1.7 mm jigs and any acrylic sheet, so items stay highest
+WIN_CLR = 0.3            # window clearance round the insert, per side
+RELIEF_R = 1.0           # window corner relief
+LEG = 70.0               # each piece reaches this far along both edges from the corner
+TAB = (6.0, 32.0)        # mat-tab relief along the side edge, measured from the corner (both tab corners)
+INSERT_T = 2.7           # stand-in insert: the acrylic frame tiles (the blank jigs are 1.7)
+LABEL_H, LABEL_D = 5.0, 0.6   # on the lip's top face, along the side leg
+
+
+def rrect(sk, w, h, r):
+    L, A = sk.sketchCurves.sketchLines, sk.sketchCurves.sketchArcs
+    x1, y1, r = w / 2 * MM, h / 2 * MM, r * MM
+    k = r * (1 - 1 / math.sqrt(2))
+
+    def near(curve, x, y):
+        a, b = curve.startSketchPoint, curve.endSketchPoint
+        return a if (a.geometry.x - x) ** 2 + (a.geometry.y - y) ** 2 < (b.geometry.x - x) ** 2 + (b.geometry.y - y) ** 2 else b
+    l0 = L.addByTwoPoints(P3.create(-x1 + r, -y1, 0), P3.create(x1 - r, -y1, 0))
+    a0 = A.addByThreePoints(l0.endSketchPoint, P3.create(x1 - k, -y1 + k, 0), P3.create(x1, -y1 + r, 0))
+    l1 = L.addByTwoPoints(near(a0, x1, -y1 + r), P3.create(x1, y1 - r, 0))
+    a1 = A.addByThreePoints(l1.endSketchPoint, P3.create(x1 - k, y1 - k, 0), P3.create(x1 - r, y1, 0))
+    l2 = L.addByTwoPoints(near(a1, x1 - r, y1), P3.create(-x1 + r, y1, 0))
+    a2 = A.addByThreePoints(l2.endSketchPoint, P3.create(-x1 + k, y1 - k, 0), P3.create(-x1, y1 - r, 0))
+    l3 = L.addByTwoPoints(near(a2, -x1, y1 - r), P3.create(-x1, -y1 + r, 0))
+    A.addByThreePoints(l3.endSketchPoint, P3.create(-x1 + k, -y1 + k, 0), l0.startSketchPoint)
+
+
+def plane(root, z):
+    if abs(z) < 1e-9:
+        return root.xYConstructionPlane
+    pi = root.constructionPlanes.createInput()
+    pi.setByOffset(root.xYConstructionPlane, VI.createByReal(z * MM))
+    pl = root.constructionPlanes.add(pi)
+    pl.isLightBulbOn = False
+    return pl
+
+
+def extrude(root, z0, profs, dist, op, name, body=None):
+    if not isinstance(profs, adsk.core.ObjectCollection):
+        c = adsk.core.ObjectCollection.create()
+        c.add(profs)
+        profs = c
+    ext = root.features.extrudeFeatures
+    ei = ext.createInput(profs, op)
+    ei.setDistanceExtent(False, VI.createByReal(dist * MM))
+    if body:
+        ei.participantBodies = [body]
+    f = ext.add(ei)
+    f.name = name
+    return f
+
+
+def sketch(root, z, name):
+    sk = root.sketches.add(plane(root, z))
+    sk.name = name
+    sk.isVisible = False
+    return sk
+
+
+def box(root, name, x0, x1, y0, y1, z0, z1, op, body=None):
+    sk = sketch(root, z0, name)
+    sk.sketchCurves.sketchLines.addTwoPointRectangle(P3.create(x0 * MM, y0 * MM, 0), P3.create(x1 * MM, y1 * MM, 0))
+    return extrude(root, z0, sk.profiles.item(0), z1 - z0, op, name, body)
+
+
+def outer_profile(sk):
+    return max(sk.profiles, key=lambda p: p.areaProperties().area)
+
+
+def build(root):
+    """The whole ring as used (plate top at z = 0), then cut into its four corners."""
+    new, cut = adsk.fusion.FeatureOperations.NewBodyFeatureOperation, adsk.fusion.FeatureOperations.CutFeatureOperation
+    off = CLR + WALL
+    sk = sketch(root, -SKIRT_D, 'Large frame outline')
+    rrect(sk, PLATE_W + 2 * off, PLATE_D + 2 * off, PLATE_R + off)
+    ring = extrude(root, -SKIRT_D, outer_profile(sk), SKIRT_D + LIP_T, new, 'Large frame').bodies.item(0)
+    sk = sketch(root, -SKIRT_D, 'Large frame plate pocket')
+    rrect(sk, PLATE_W + 2 * CLR, PLATE_D + 2 * CLR, PLATE_R + CLR)
+    extrude(root, -SKIRT_D, outer_profile(sk), SKIRT_D, cut, 'Large frame plate pocket', ring)
+    wx, wy = AREA[0] / 2 + WIN_CLR, AREA[1] / 2 + WIN_CLR
+    sk = sketch(root, -SKIRT_D, 'Large frame window')
+    sk.sketchCurves.sketchLines.addTwoPointRectangle(P3.create(-wx * MM, -wy * MM, 0), P3.create(wx * MM, wy * MM, 0))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            sk.sketchCurves.sketchCircles.addByCenterRadius(
+                P3.create(sx * (wx - RELIEF_R * 0.3) * MM, sy * (wy - RELIEF_R * 0.3) * MM, 0), RELIEF_R * MM)
+    profs = adsk.core.ObjectCollection.create()
+    for p in sk.profiles:
+        if p.areaProperties().area < (2 * wx * 2 * wy + 10) * MM * MM:    # the window and its reliefs, not the ring
+            profs.add(p)
+    extrude(root, -SKIRT_D, profs, SKIRT_D + LIP_T, cut, 'Large frame window', ring)
+    # mat-tab reliefs through the side wall at the rear-right and front-left corners
+    xo, yo = PLATE_W / 2, PLATE_D / 2
+    for sx, sy in ((1, 1), (-1, -1)):
+        y0, y1 = sorted((sy * (yo - TAB[0]), sy * (yo - TAB[1])))
+        x0, x1 = sorted((sx * xo, sx * (xo + off + 1)))
+        box(root, 'Large frame tab relief', x0, x1, y0, y1, -SKIRT_D - 0.1, LIP_T + 0.1, cut, ring)
+    # cut the ring into four corner pieces: everything farther than LEG from a corner goes
+    gx, gy = PLATE_W / 2 - LEG, PLATE_D / 2 - LEG
+    box(root, 'Large frame split X', -gx, gx, -yo - off - 1, yo + off + 1, -SKIRT_D - 0.1, LIP_T + 0.1, cut, ring)
+    box(root, 'Large frame split Y', -xo - off - 1, xo + off + 1, -gy, gy, -SKIRT_D - 0.1, LIP_T + 0.1, cut, None)
+    corners = list(root.bRepBodies)          # the cuts leave exactly the four corners (Fusion renames the pieces)
+    if len(corners) != 4:
+        raise RuntimeError('expected 4 corner pieces, got %d' % len(corners))
+    names = {(-1, -1): 'O1 Large corner front-left (tab relief)', (1, 1): 'O1 Large corner rear-right (tab relief)',
+             (1, -1): 'O1 Large corner front-right', (-1, 1): 'O1 Large corner rear-left'}
+    for b in corners:
+        c = b.boundingBox
+        key = (1 if c.maxPoint.x + c.minPoint.x > 0 else -1, 1 if c.maxPoint.y + c.minPoint.y > 0 else -1)
+        b.name = names[key]
+        label(root, b, key, 'LARGE  TAB' if 'tab' in b.name else 'LARGE')
+    return corners
+
+
+def label(root, body, key, words):
+    """Bold label on the lip's top face (the face you see in use, the bed face when printed), along the side leg,
+    between the window and the plate edge. Measured and re-centred once: Fusion picks the side of the path."""
+    sx, sy = key
+    face = max((f for f in body.faces if f.geometry.surfaceType == adsk.core.SurfaceTypes.PlaneSurfaceType
+                and f.evaluator.getNormalAtPoint(f.pointOnFace)[1].z > 0.99 and abs(f.pointOnFace.z - LIP_T * MM) < 1e-6),
+               key=lambda f: f.area)
+    xc = sx * ((AREA[0] / 2 + WIN_CLR) + PLATE_W / 2) / 2          # middle of the lip band over the plate
+    y_a, y_b = sy * (PLATE_D / 2 - LEG + 3), sy * (PLATE_D / 2 - 10)   # the whole leg (the tab cut is only in the wall)
+    yc = (y_a + y_b) / 2
+    target = xc
+    for attempt in range(2):
+        sk = root.sketches.add(face)
+        sk.isVisible = False
+        n_s = sk.xDirection.crossProduct(sk.yDirection)
+        p0 = sk.modelToSketchSpace(P3.create(xc * MM, y_a * MM, LIP_T * MM))
+        p1 = sk.modelToSketchSpace(P3.create(xc * MM, y_b * MM, LIP_T * MM))
+        path = sk.sketchCurves.sketchLines.addByTwoPoints(p0, p1)
+        path.isConstruction = True
+        ti = sk.sketchTexts.createInput3("'%s'" % words, VI.createByReal(LABEL_H * MM))
+        ti.fontName = 'Arial Black'
+        ti.setAsAlongPath(path, True, adsk.core.HorizontalAlignments.CenterHorizontalAlignment, 0)
+        if n_s.z < 0:              # sketch faces into the part: the text would read mirrored from above
+            ti.isHorizontalFlip = True
+        t = sk.sketchTexts.add(ti)
+        bb = t.boundingBox
+        m = sk.sketchToModelSpace(P3.create((bb.minPoint.x + bb.maxPoint.x) / 2, (bb.minPoint.y + bb.maxPoint.y) / 2, 0))
+        off = target - m.x / MM
+        if abs(off) < 0.3:
+            break
+        sk.deleteMe()
+        xc += off
+    ei = root.features.extrudeFeatures.createInput(t, adsk.fusion.FeatureOperations.CutFeatureOperation)
+    ei.setSymmetricExtent(VI.createByReal(2 * LABEL_D * MM), True)   # the inward half cuts
+    ei.participantBodies = [body]
+    root.features.extrudeFeatures.add(ei)
+
+
+def fit_check(root, des, corners):
+    new = adsk.fusion.FeatureOperations.NewBodyFeatureOperation
+    sk = sketch(root, -4.0, 'Fit check plate')
+    rrect(sk, PLATE_W, PLATE_D, PLATE_R)
+    plate = extrude(root, -4.0, sk.profiles.item(0), 4.0, new, 'Fit check plate').bodies.item(0)
+    plate.name = 'Fit check plate (%g x %g)' % (PLATE_W, PLATE_D)
+    sk = sketch(root, 0, 'Fit check insert')
+    sk.sketchCurves.sketchLines.addTwoPointRectangle(P3.create(-AREA[0] / 2 * MM, -AREA[1] / 2 * MM, 0),
+                                                     P3.create(AREA[0] / 2 * MM, AREA[1] / 2 * MM, 0))
+    ins = extrude(root, 0, sk.profiles.item(0), INSERT_T, new, 'Fit check insert').bodies.item(0)
+    ins.name = 'Fit check insert (330 x 420 x %.1f)' % INSERT_T
+    ents = adsk.core.ObjectCollection.create()
+    for b in corners + [plate, ins]:
+        ents.add(b)
+    ii = des.createInterferenceInput(ents)
+    ii.areCoincidentFacesIncluded = False
+    res = des.analyzeInterference(ii)
+    mm = adsk.core.Application.get().measureManager
+    print('interference (touching excluded): %s' % ([('%s / %s' % (r.entityOne.name, r.entityTwo.name)) for r in res] or 'none'))
+    print('gaps: corner-plate %.2f, corner-insert %.2f mm' % (
+        min(mm.measureMinimumDistance(c, plate).value for c in corners) * 10,
+        min(mm.measureMinimumDistance(c, ins).value for c in corners) * 10))
+    for b in (plate, ins):
+        b.opacity = 0.35
+
+
+def run(_context: str):
+    app = adsk.core.Application.get()
+    app.documents.add(adsk.core.DocumentTypes.FusionDesignDocumentType)
+    des = adsk.fusion.Design.cast(app.activeProduct)
+    des.designType = adsk.fusion.DesignTypes.ParametricDesignType
+    root = des.rootComponent
+    corners = build(root)
+    for b in corners:
+        bb = b.boundingBox
+        print('%-42s %.1f x %.1f x %.1f mm, %.1f g PLA' % (b.name, (bb.maxPoint.x - bb.minPoint.x) * 10,
+              (bb.maxPoint.y - bb.minPoint.y) * 10, (bb.maxPoint.z - bb.minPoint.z) * 10, b.volume * 1.24))
+    print('lip widths: sides %.1f mm, front/back %.1f mm (plate %g x %g)' % (
+        (PLATE_W - AREA[0]) / 2 - WIN_CLR, (PLATE_D - AREA[1]) / 2 - WIN_CLR, PLATE_W, PLATE_D))
+    fit_check(root, des, corners)

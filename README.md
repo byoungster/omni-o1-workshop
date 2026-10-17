@@ -222,6 +222,32 @@ its product page calls them standard and large. By size:
 `fusion/o1_jigs.py` generates jigs for any flat rectangular item: add a line to `ITEMS`. `fusion/o1_frame.py`
 builds the small-plate frame halves, and `fusion/o1_clips.py` the clips for both plates.
 
+- **Labels:** every jig tile has its set and tile ID in bold on its underside (e.g. LARGE 4R x6 A1, 12X12 FRAME
+  B2). Clips say LARGE or SMALL, and the small-plate frame halves say SMALL FRAME, so sets go back together
+  after storage.
+
+## Storage for O1 plates, jigs and acrylic
+
+**Plate rack (`fusion/o1_plate_rack.py`, in test):** under-shelf rails for the O1 baseplates.
+- Two slots side by side, about 736 mm wide and 30 mm deep under the shelf. Each slot takes either plate on its
+  344 mm edges, sticky mat up, 5 mm under the flange, so dust stays off the mat.
+- The C-rails print lying on their wall, in two halves joined by a dovetail. A solid guide lip clears the mat's
+  peel tab.
+- They hang on #8 pan-head screws through keyhole slots. Drive the screws first, join each rail's halves on the
+  bench, push the rail up over the heads, slide it 10 mm back, then snug the screws from below. Use a plate as the
+  spacing gauge for the second rail. The full steps are in the script's docstring.
+- The first print is a 40 mm fit section plus dovetail test pairs (0.15, 0.25 and 0.35 mm), with the
+  `plate_rack` recipe (X1C, 4 walls).
+
+**File racks (`fusion/o1_file_rack.py`):** pairs of slotted combs that stand jig sets and acrylic sheets on edge on
+a flat shelf, like a dish rack.
+- Large jigs: 2R 3R 4R 12x12 5R 6R 8R. Small jigs: 2R 3R FRAME 4R plus a spare. Acrylic: three 1/8 in, four
+  1/4 in and three 1/8 in sheets, in their film.
+- Layouts are symmetric, so either comb can face either way.
+- Screw the feet to the shelf. A loose comb tips with a light touch at the top of a 305 mm sheet.
+- Comb spacing: about 240 mm for acrylic, 100 mm for small jigs, 145 mm for large jigs.
+- `file_racks` recipe: P1S, 5 walls so the teeth print solid.
+
 ## Printing on Bambu Lab printers
 
 The repo ships **Bambu Studio project files, not G-code**. G-code is specific to one printer, nozzle and

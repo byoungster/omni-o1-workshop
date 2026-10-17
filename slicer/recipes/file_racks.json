@@ -1,0 +1,16 @@
+{
+  "description": "O1 file rack combs (jig sets and 12x12 acrylic standing on edge): black PLA on smooth PEI, P1S.",
+  "machine": "Bambu Lab P1S 0.4 nozzle",
+  "process": "0.20mm Standard @BBL X1C",
+  "filament": "Bambu PLA Basic @BBL P1S 0.4 nozzle",
+  "bed_type": "High Temp Plate",
+  "ams_color": "000000",
+  "overrides": {
+    "process": {
+      "wall_loops": "5"
+    }
+  },
+  "changelog": [
+    "2026-10-17  created for fusion/o1_file_rack.py. wall_loops 5: the 5 mm teeth bend across layers when a sheet is pushed sideways; 5 loops print them solid (print-engineer review)"
+  ]
+}

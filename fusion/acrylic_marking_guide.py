@@ -1,7 +1,8 @@
 """Corner marking guide for acrylic sheets UV printed on the xTool O1 Omni (Autodesk Fusion API script).
 
 One guide serves all four corners: two lips hook the sheet's edges at a corner, and a small hole HOLE_IN from
-both edges takes an awl or a fine pen. A 45 degree cone on top centres the tip. Mark all four corners, then drill
+both edges takes a Sharpie, a pencil or an awl. The hole is a 45 degree funnel down to a short straight land, so
+a nib or a sharpened pencil cone reaches the sheet and lands on centre. Mark all four corners, then drill
 away from the guide, with the sheet clamped over scrap wood: a step bit in a hand drill, or a drill press.
 (v1-v3 were drill guides. A 7.5 mm twist bit grabs as it breaks through 1/8 in acrylic, and a hand-held guide
 locked to the sheet corner then spins the whole sheet; a spinning bit also wears and melts a PLA guide hole.
@@ -21,8 +22,10 @@ P3 = adsk.core.Point3D
 MM = 0.1
 
 HOLE_IN = 25.4             # hole centre from each sheet edge (1 in)
-MARK_D = 2.5               # awl point or fine pen tip (the mounting holes are drilled 7.5 mm afterwards)
-CONE = 1.5                 # 45 degree cone at the top of the hole: centres the tip (5.5 mm across at the face)
+MARK_D = 2.5               # land hole: a Sharpie nib, pencil point or awl passes, and the mark lands within ~0.5 mm
+                           # of centre (the mounting holes are drilled 7.5 mm afterwards)
+LAND = 0.8                 # straight part of the hole above the sheet. A 1.5 mm cone on a 4 mm plate left a 2.5 mm
+                           # bore too deep for a Sharpie nib or a pencil cone to reach the sheet (user, 2026-10-16)
 LABEL = 'MARK'
 SHEET_T = 3.0              # 1/8 in acrylic (nominal 3.175, often 2.8-3.0 measured)
 LIP_D = 2.0                # lip depth below the sheet's top face: keep under SHEET_T
@@ -31,6 +34,7 @@ PLATE_T = 4.0              # plate thickness (the first 8 mm plate felt bulky; u
 SPAN = 45.0                # plate reach from each edge
 R_CORNER = 3.0             # outer corners
 R_RELIEF = 1.5             # inside corner relief for the sheet corner
+CONE = PLATE_T - LAND      # 45 degree funnel from the top face (8.9 mm across) down to the land
 TEXT_BIG, TEXT_SMALL = 8.0, 6.0   # bold lettering looks premium, and 3.5 mm letters' counters close up on the bed face
 TEXT_D = 0.6               # three layers deep: crisp on the glossy bed face
 

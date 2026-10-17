@@ -206,8 +206,9 @@ its product page calls them standard and large. By size:
 
 - **Acrylic sheet corner marking guide:** marks the mounting holes, 1 in from both edges of 12x12 in acrylic sheets.
   One guide does all four corners.
-  - Two lips hook the sheet's edges at a corner. Push an awl or a fine pen through the 2.5 mm hole; a 45° cone on
-    top centres the tip.
+  - Two lips hook the sheet's edges at a corner. Mark through the hole with a Sharpie, a pencil or an awl.
+  - The hole is a 45° funnel, 8.9 mm across at the top, down to a 2.5 mm hole with only 0.8 mm of straight wall
+    above the sheet. A felt nib or a sharpened pencil cone reaches the sheet and lands on centre.
   - Drill afterwards, away from the guide, with the sheet clamped over scrap wood. Use a step bit in a hand drill,
     or a drill press. The hardware needs 7.5 mm holes.
   - Why it's not a drill guide any more: earlier versions guided the bit. But a 7.5 mm twist bit grabs as it

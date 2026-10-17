@@ -38,6 +38,7 @@ MID_GAP = 1.0              # gap between the halves at the centre (plate width i
 BADGE_HALF = 35.0          # no skirt within this distance of the centre, front and back
 TAB = (7.0, 36.0)          # mat-tab relief, from the rear corner, at the right end (tab ~9-34 mm, sticks out 6-7)
 NAME = 'O1 Small frame half'
+LABEL, LABEL_H, LABEL_D = 'SMALL FRAME', 5.0, 0.4   # on the ring's end band: the visible top face in use
 
 
 def near(curve, x, y):
@@ -152,6 +153,37 @@ def build_half(root):
     # is at -Y here. The other half, turned 180 degrees, gets the relief at the front-left corner.
     y0, y1 = PLATE[1] / 2 - TAB[1], PLATE[1] / 2 - TAB[0]
     box(root, 0, h, x_end, x_end + WALL + 1, -y1, -y0, cut, NAME + ' Tab relief', body)
+
+    # Label on the ring's end band (the bed face here, the top face in use), centred between window and end wall
+    xc = (wx + x_end) / 2
+    face = max((f for f in body.faces if f.geometry.surfaceType == adsk.core.SurfaceTypes.PlaneSurfaceType
+                and f.evaluator.getNormalAtPoint(f.pointOnFace)[1].z < -0.99 and abs(f.pointOnFace.z) < 1e-6),
+               key=lambda f: f.area)
+    for attempt in range(2):            # Fusion picks the side of the path; measure and re-centre once
+        sk = root.sketches.add(face)
+        sk.isVisible = False
+        n_s = sk.xDirection.crossProduct(sk.yDirection)
+        a = sk.modelToSketchSpace(P3.create(xc * MM, -40 * MM, 0))
+        b = sk.modelToSketchSpace(P3.create(xc * MM, 40 * MM, 0))
+        path = sk.sketchCurves.sketchLines.addByTwoPoints(a, b)
+        path.isConstruction = True
+        ti = sk.sketchTexts.createInput3("'%s'" % LABEL, VI.createByReal(LABEL_H * MM))
+        ti.fontName = 'Arial Black'
+        ti.setAsAlongPath(path, True, adsk.core.HorizontalAlignments.CenterHorizontalAlignment, 0)
+        if n_s.z > 0:                   # sketch faces into the part: flip so it reads from the face's side
+            ti.isHorizontalFlip = True
+        t = sk.sketchTexts.add(ti)
+        bb = t.boundingBox
+        mid = sk.sketchToModelSpace(P3.create((bb.minPoint.x + bb.maxPoint.x) / 2, (bb.minPoint.y + bb.maxPoint.y) / 2, 0))
+        off = (wx + x_end) / 2 - mid.x / MM
+        if abs(off) < 0.3:
+            break
+        sk.deleteMe()
+        xc += off
+    ei = root.features.extrudeFeatures.createInput(t, cut)
+    ei.setSymmetricExtent(VI.createByReal(2 * LABEL_D * MM), True)   # the inward half cuts, whichever way the sketch faces
+    ei.participantBodies = [body]
+    root.features.extrudeFeatures.add(ei).name = NAME + ' Label'
     return body
 
 

@@ -43,6 +43,7 @@ S_CLR = 0.3                # clip wall to the half's end wall
 S_WALL = 3.0
 S_HOOK_CLR, S_HOOK_T, S_HOOK_IN = 0.7, 2.0, 7.0   # gap under the end lip (as Jig Generator), hook, reach
 S_LEN = 50.0               # the end's handle cutout is ~83 mm wide at the top; the mat tab starts 30 mm off centre
+LABEL_H, LABEL_D = 7.0, 0.6   # which plate a clip belongs to, on its outer wall (it ends up in a drawer with the rest)
 
 
 def large_profile():
@@ -101,6 +102,31 @@ def check(root, clip, stand_ins, name):
           % (name, clash(0, 0), clash(0, 1.0), clash(12, 0)))
 
 
+def label_outer(root, body, x_face, words, y_mid, length):
+    """Deboss words along the clip on its flat outer wall (normal +X at x_face), readable from outside."""
+    face = max((f for f in body.faces if f.geometry.surfaceType == adsk.core.SurfaceTypes.PlaneSurfaceType
+                and f.evaluator.getNormalAtPoint(f.pointOnFace)[1].x > 0.99 and abs(f.pointOnFace.x - x_face * MM) < 1e-6),
+               key=lambda f: f.area)
+    sk = root.sketches.add(face)
+    sk.isVisible = False
+    n_s = sk.xDirection.crossProduct(sk.yDirection)
+    a = sk.modelToSketchSpace(P3.create(x_face * MM, (y_mid - LABEL_H / 2) * MM, 2.0 * MM))
+    b = sk.modelToSketchSpace(P3.create(x_face * MM, (y_mid - LABEL_H / 2) * MM, (length - 2.0) * MM))
+    path = sk.sketchCurves.sketchLines.addByTwoPoints(a, b)
+    path.isConstruction = True
+    ti = sk.sketchTexts.createInput3("'%s'" % words, VI.createByReal(LABEL_H * MM))
+    ti.fontName = 'Arial Black'
+    ti.setAsAlongPath(path, True, adsk.core.HorizontalAlignments.CenterHorizontalAlignment, 0)
+    if n_s.x < 0:           # sketch faces into the clip: the text would read mirrored from outside
+        ti.isHorizontalFlip = True
+    t = sk.sketchTexts.add(ti)
+    ext = root.features.extrudeFeatures
+    ei = ext.createInput(t, adsk.fusion.FeatureOperations.CutFeatureOperation)
+    ei.setSymmetricExtent(VI.createByReal(2 * LABEL_D * MM), True)   # the inward half cuts, whichever way the sketch faces
+    ei.participantBodies = [body]
+    ext.add(ei)
+
+
 def block(root, x0, x1, y0, y1, length, name, xs=0.0):
     return polygon_body(root, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)], length, name, xs)
 
@@ -113,11 +139,13 @@ def run(_context: str):
     root = des.rootComponent
 
     large = polygon_body(root, large_profile(), L_LEN, 'O1 Large plate edge clip (print 8)')
+    label_outer(root, large, L_CLR + L_WALL, 'LARGE', -(L_PLATE_T + L_CLR) / 2, L_LEN)
     plate = block(root, -40, 0, -L_PLATE_T, 0, L_LEN, 'Stand-in large plate edge')
     check(root, large, [plate], 'large edge clip')
 
     xs = 60.0                                 # small clip and its stand-ins, side by side with the large one
     small = polygon_body(root, small_profile(), S_LEN, 'O1 Small plate end clip (print 2)', xs)
+    label_outer(root, small, xs + S_HALF_WALL + S_CLR + S_WALL, 'SMALL', (-(S_LIP + S_HOOK_CLR) + S_RING_T + 0.1) / 2, S_LEN)
     lip = block(root, -40, 0, -S_LIP, 0, S_LEN, 'Stand-in small plate end lip', xs)
     ring = block(root, -6.7, S_HALF_WALL, 0, S_RING_T, S_LEN, 'Stand-in frame half ring', xs)
     wall = block(root, 0, S_HALF_WALL, -S_HALF_SKIRT, 0, S_LEN, 'Stand-in frame half end wall', xs)

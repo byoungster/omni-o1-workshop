@@ -182,6 +182,9 @@ its product page calls them standard and large. By size:
   - Four L-shaped tiles (two plates) butt together inside the edge clips' window. With no floor it takes about
     120 g, not a 300 g slab.
   - It comes from the same generator: an `ITEMS` line with `{'floor': 0.0}`.
+- **12x16 in acrylic sheet (large plate):** the same kind of frame. A 12x16 sheet (305 x 406 mm) fits the 330 x 420 print
+  area with about 6 mm of frame at the front and back, so the tile labels run along the 12 mm side rails. Two X1C
+  plates, about 41 g.
 - Calibrate once: tape over the jig, print the template, measure the offset, correct it in xTool Studio.
 - **Clips that lock frames to the plate:** straight C-clips, each printed lying on its C profile. Both jaws are
   part of the flat outline, so there are no overhangs and no supports, and the jaws bend along the layers, the

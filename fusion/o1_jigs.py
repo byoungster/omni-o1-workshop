@@ -47,6 +47,7 @@ ITEMS = [
     # bought sheet: +0.3% for the jig's shrink; thickness is the thinnest 1/8 in sheet seen (2.8), so the
     # frame stays below the sheet's top face and the O1's height sensing lands on the acrylic
     ('12x12 in acrylic sheet', 304.8 * 1.003, 304.8 * 1.003, 2.8, ('Large',), {'floor': 0.0}),
+    ('12x16 in acrylic sheet', 304.8 * 1.003, 406.4 * 1.003, 2.8, ('Large',), {'floor': 0.0}),   # 6 mm end bands
 ]
 
 
@@ -107,24 +108,38 @@ def seam_pos(centres_, pocket, length):
     return min(ok, key=lambda w: abs(w - length / 2)) if ok else length / 2
 
 
-def label_underside(root, body, text, depth, cx, cy, half_w):
-    """Deboss text on the tile's underside (the bed face), readable when the tile is turned over."""
+def label_underside(root, body, text, depth, cx, cy, half_len, along='x', h=LABEL_H):
+    """Deboss text centred at (cx, cy) on the tile's underside (the bed face), readable when the tile is turned
+    over, running along model x or y. Fusion picks which side of the path the text sits on, so measure where it
+    landed and re-centre it once (it must stay inside narrow frame bands)."""
     face = max((f for f in body.faces if f.geometry.surfaceType == adsk.core.SurfaceTypes.PlaneSurfaceType
                 and f.evaluator.getNormalAtPoint(f.pointOnFace)[1].z < -0.99 and abs(f.pointOnFace.z) < 1e-6),
                key=lambda f: f.area)
-    sk = root.sketches.add(face)
-    sk.isVisible = False
-    n_s = sk.xDirection.crossProduct(sk.yDirection)
-    a = sk.modelToSketchSpace(P3.create((cx - half_w) * MM, (cy - LABEL_H / 2) * MM, 0))
-    b = sk.modelToSketchSpace(P3.create((cx + half_w) * MM, (cy - LABEL_H / 2) * MM, 0))
-    path = sk.sketchCurves.sketchLines.addByTwoPoints(a, b)
-    path.isConstruction = True
-    ti = sk.sketchTexts.createInput3("'%s'" % text, VI.createByReal(LABEL_H * MM))
-    ti.fontName = 'Arial Black'
-    ti.setAsAlongPath(path, True, adsk.core.HorizontalAlignments.CenterHorizontalAlignment, 0)
-    if n_s.z > 0:            # sketch faces into the part: the text would read mirrored from below
-        ti.isHorizontalFlip = True
-    t = sk.sketchTexts.add(ti)
+    px, py = cx, cy                                   # path centre, corrected after the first try
+    for attempt in range(2):
+        sk = root.sketches.add(face)
+        sk.isVisible = False
+        n_s = sk.xDirection.crossProduct(sk.yDirection)
+        if along == 'x':
+            ends = ((px - half_len, py), (px + half_len, py))
+        else:
+            ends = ((px, py - half_len), (px, py + half_len))
+        a_, b_ = [sk.modelToSketchSpace(P3.create(x * MM, y * MM, 0)) for x, y in ends]
+        path = sk.sketchCurves.sketchLines.addByTwoPoints(a_, b_)
+        path.isConstruction = True
+        ti = sk.sketchTexts.createInput3("'%s'" % text, VI.createByReal(h * MM))
+        ti.fontName = 'Arial Black'
+        ti.setAsAlongPath(path, True, adsk.core.HorizontalAlignments.CenterHorizontalAlignment, 0)
+        if n_s.z > 0:            # sketch faces into the part: the text would read mirrored from below
+            ti.isHorizontalFlip = True
+        t = sk.sketchTexts.add(ti)
+        bb = t.boundingBox
+        m = sk.sketchToModelSpace(P3.create((bb.minPoint.x + bb.maxPoint.x) / 2, (bb.minPoint.y + bb.maxPoint.y) / 2, 0))
+        dx, dy = cx - m.x / MM, cy - m.y / MM
+        if (abs(dy) if along == 'x' else abs(dx)) < 0.3:
+            break
+        sk.deleteMe()
+        px, py = px + (0 if along == 'x' else dx), py + (dy if along == 'x' else 0)
     ext = root.features.extrudeFeatures
     ei = ext.createInput(t, adsk.fusion.FeatureOperations.CutFeatureOperation)
     ei.setSymmetricExtent(VI.createByReal(2 * depth * MM), True)   # the inward half cuts, whichever way the sketch faces
@@ -218,12 +233,20 @@ def build_jig(root, bed, item, w, h, t, x0, y0, floor=FLOOR):
         # underside label: set + tile ID, centred on the tile; on a frame, in the wide end band
         cx = (bb.minPoint.x + bb.maxPoint.x) / 2 / MM
         cy = (bb.minPoint.y + bb.maxPoint.y) / 2 / MM
-        if floor <= 0:
-            band = (bh - ph) / 2
-            cy = (y0 + band / 2) if bb.minPoint.y < (y0 + 1) * MM else (y0 + bh - band / 2)
         words = short.upper() if floor <= 0 else '%s %s x%d' % (bed.upper(), short, count)
-        label_underside(root, b, words + ('  ' + tid if tid else ''), LABEL_D if floor > 0 else LABEL_D_FRAME, cx, cy,
-                        (bb.maxPoint.x - bb.minPoint.x) / 2 / MM - 6)
+        words += ('  ' + tid if tid else '')
+        half_x = (bb.maxPoint.x - bb.minPoint.x) / 2 / MM - 6
+        if floor <= 0:
+            band, side = (bh - ph) / 2, (bw - pw) / 2
+            if band >= LABEL_H + 3:          # wide end band (12x12): label along it
+                cy = (y0 + band / 2) if bb.minPoint.y < (y0 + 1) * MM else (y0 + bh - band / 2)
+                label_underside(root, b, words, LABEL_D_FRAME, cx, cy, half_x)
+            else:                            # thin end band (12x16: 6 mm): label along the side rail instead
+                cx = (x0 + side / 2) if bb.minPoint.x < (x0 + 1) * MM else (x0 + bw - side / 2)
+                label_underside(root, b, words, LABEL_D_FRAME, cx, cy, (bb.maxPoint.y - bb.minPoint.y) / 2 / MM - 12,
+                                'y', min(LABEL_H, side - 3))
+        else:
+            label_underside(root, b, words, LABEL_D, cx, cy, half_x)
     walls = ('wall' if sx in [(a + b) / 2 for a, b in zip(cxs, cxs[1:])] or bw <= MAX_TILE else 'pocket',
              'wall' if sy in [(a + b) / 2 for a, b in zip(cys, cys[1:])] or bh <= MAX_TILE else 'pocket')
     return name, count, nx, ny, len(tiles), jig_t, walls

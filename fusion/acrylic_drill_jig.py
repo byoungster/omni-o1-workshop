@@ -1,8 +1,8 @@
 """Corner drill guide for acrylic sheets UV printed on the xTool O1 Omni (Autodesk Fusion API script).
 
 One guide serves all four corners: two lips hook the sheet's edges at a corner and a guide hole sits HOLE_IN
-from both edges. Drill a pilot through it, move the guide to the next corner, then open the pilots up with the
-screw-size or step bit.
+from both edges. Drill the mounting hole through it with the BIT, then move the guide to the next corner. Drill
+slowly with light pressure: acrylic chips and cracks at high speed, and a slow bit doesn't melt the guide hole.
 
 The lips are shorter than the sheet is thick, so the guide sits flat on the sheet while the sheet lies on the
 bench. A relief at the inside corner lets a burred or slightly rounded sheet corner seat fully.
@@ -18,13 +18,14 @@ P3 = adsk.core.Point3D
 MM = 0.1
 
 HOLE_IN = 25.4             # hole centre from each sheet edge (1 in)
-BIT = 3.175                # 1/8 in pilot bit
-BIT_CLR = 0.25             # printed holes come out ~0.15 small: the bit turns freely without wobbling
+BIT = 7.5                  # mounting-hardware hole (user, 2026-10-16; the first guide took a 1/8 in pilot)
+BIT_LABEL = '7.5 mm bit'
+BIT_CLR = 0.3              # printed holes come out ~0.15 small: the bit turns freely without wobbling
 LEAD_IN = 0.8              # chamfer at the hole's top, to start the bit
 SHEET_T = 3.0              # 1/8 in acrylic (nominal 3.175, often 2.8-3.0 measured)
 LIP_D = 2.0                # lip depth below the sheet's top face: keep under SHEET_T
 LIP_T = 4.0                # lip thickness
-PLATE_T = 4.0              # guide plate thickness = length of the bit's guide. Enough to start a pilot square
+PLATE_T = 4.0              # guide plate thickness = length of the bit's guide. Enough to start a bit square
                            # through a 1/8 in sheet; the first 8 mm plate felt bulky (user, 2026-10-16)
 SPAN = 45.0                # plate reach from each edge
 R_CORNER = 3.0             # outer corners
@@ -92,7 +93,7 @@ def run(_context: str):
     new, cut = adsk.fusion.FeatureOperations.NewBodyFeatureOperation, adsk.fusion.FeatureOperations.CutFeatureOperation
 
     body = box(root, -LIP_T, -LIP_T, -LIP_D, SPAN, SPAN, PLATE_T, new, 'Guide').bodies.item(0)
-    body.name = 'Acrylic corner drill guide (1 in, 1-8 in bit)'
+    body.name = 'Acrylic corner drill guide (1 in, %s)' % BIT_LABEL
     box(root, 0, 0, -LIP_D - 1, SPAN + 1, SPAN + 1, 0, cut, 'Sheet', body)          # leaves the two lips
     cylinder(root, 0, 0, R_RELIEF, -LIP_D - 1, 0, cut, 'Corner Relief', body)
     cylinder(root, HOLE_IN, HOLE_IN, (BIT + BIT_CLR) / 2, -LIP_D - 1, PLATE_T + 1, cut, 'Guide Hole', body)
@@ -124,7 +125,7 @@ def run(_context: str):
 
     gap = HOLE_IN + (BIT + BIT_CLR) / 2 + LEAD_IN + 1.0
     text(root, '1 in', 2, gap, SPAN - 2, gap + (SPAN - gap) / 2, body)
-    text(root, '1/8 bit', 2, gap + (SPAN - gap) / 2, SPAN - 2, SPAN - 1, body)
+    text(root, BIT_LABEL, 2, gap + (SPAN - gap) / 2, SPAN - 2, SPAN - 1, body)
 
     bb = body.boundingBox
     print('%s: %.1f x %.1f x %.1f mm, %.1f g solid; hole %.2f mm at %.1f mm from both edges; lips %.1f mm deep '

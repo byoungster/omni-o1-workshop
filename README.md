@@ -206,8 +206,9 @@ its product page calls them standard and large. By size:
 
 - **Acrylic sheet corner drill guide:** for mounting holes 1 in from both edges of 12x12 in acrylic sheets. One
   guide does all four corners.
-  - Two lips hook the sheet's edges at a corner. Drill a 1/8 in pilot through the guide hole, move to the next
-    corner, then open the pilots up to screw size.
+  - Two lips hook the sheet's edges at a corner. Drill the 7.5 mm mounting hole straight through the guide hole,
+    slowly and with light pressure, then move to the next corner. (The first version took a 1/8 in pilot; the
+    mounting hardware needs 7.5 mm.)
   - The lips are 2 mm deep, shorter than a 1/8 in sheet, so the guide sits flat with the sheet on the bench. A
     relief at the inside corner lets a burred corner seat.
   - Print it top-face down, lips up, as exported (`drill_jigs` recipe). For another hole spacing, bit or sheet

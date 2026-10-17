@@ -12,6 +12,7 @@
     }
   },
   "changelog": [
-    "2026-10-16  created for the acrylic corner drill guide: printed top-face down on smooth PEI (lips up), 4 walls so the 1/8 in guide hole is ringed in solid plastic"
+    "2026-10-16  created for the acrylic corner drill guide: printed top-face down on smooth PEI (lips up), 4 walls so the 1/8 in guide hole is ringed in solid plastic",
+    "2026-10-16  model: guide hole 1/8 in pilot -> 7.5 mm (the mounting hardware needs a 7.5 mm hole); 4 walls still ring it in solid plastic"
   ]
 }

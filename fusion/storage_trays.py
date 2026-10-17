@@ -26,7 +26,8 @@ CLR = 0.75        # blank-to-pocket clearance per side
 WALL = 2.4
 RIM = 1.2         # outer rim left at the stacking rebate
 FIT = 0.2         # foot/plug clearance inside the rebate
-DISPENSER = 'button'  # 'button': side push-button + lever; 'side': v3 wall slider; 'rear': finger notch; None: plain
+DISPENSER = 'button'  # 'button': side push-button + lever; 'front': front press-down lever (v5, prototype);
+                      # 'side': v3 wall slider; 'rear': finger notch; None: plain
 SLOT_H = 1.9      # dispenser slot height: one 1 mm blank passes with room for bridge sag, two (2 mm) don't
 LINTEL = 3.0      # solid strip above the slot: bridges side wall to side wall and stops the stack
 # (v1 had a 1.6 mm slot under a 2 mm lintel; the bridge sagged until blanks bound in the slot)
@@ -130,10 +131,31 @@ PIN_FILLET = 0.6              # rounded pin roots spread the bending over more l
 EAR_WALL = 1.2                # wall around the slots in the button and the sled's ear
 BTN_SPRING = 'D'
 
+# Front press lever (v5): press a tab at the front-right DOWN and the bottom blank pushes out of the front, so the
+# force goes into the shelf and nothing pushes the tray sideways (the side button had to be held). A crank in a
+# housing at the front-right corner (its pivot runs across the tray) swings its down-arm back; the arm's pin drives a
+# pusher along the right side under the floor; the pusher's rear slot turns a straight 3:1 lever whose long arm moves
+# the same sled forward. The housing sits outside the pocket, so the front stops stay whole.
+FL_R_IN, FL_R_OUT = 6.5, 19.5          # straight lever arms (3:1): short arm toward the right wall
+CRANK_T, CRANK_W = 3.5, 6.0            # crank plate thickness (x) and arm width
+CRANK_L1, CRANK_L2 = 18.0, 9.65        # tab arm, and down-arm to its pin: 9.65 x (cos 255 - cos 285) = 5 mm push
+CRANK_A0, CRANK_SWING = 15.0, 30.0     # tab arm 15 deg above horizontal at rest; it swings 30 deg down (~9 mm)
+CRANK_PIN_D, CRANK_PIN_Z = 4.0, 9.2    # crank pin; its height keeps the crank above the pusher
+CRANK_Y = 11.0                         # pivot behind the front face
+AXLE_D = 4.0                           # printed axle through the housing, the crank and into the right wall
+FORK_T, FORK_TOP = 2.5, 13.5           # fork plate on the pusher, beside the crank; open-top slot for the pin
+PUSH_W, PUSH_GAP = 6.0, 0.3            # pusher bar width; side clearance of the crank and fork in their slot
+PUSH_X = 4.0                           # pusher bar centre line, in from the pocket's right wall
+HOUSE_D, HOUSE_WALL = 24.0, 1.6
+TOWER_MAGNETS = DISPENSER == 'front'   # trays and lids stack in one tower of mixed sizes, fronts flush
+MAGNET_D, MAGNET_T = 6.2, 3.2          # 6 x 3 mm disc magnets, pressed or glued in
+MAGNET_DX, MAGNET_Y = 20.0, 55.0       # same pattern on every size: +-DX from the centre, Y back from the front face
+LID_BOSS_R = 4.5                       # boss under the lid: room for a 3 mm magnet in a 2 mm lid
+
 CHAMF = RIM + FIT                     # foot inset; 45 deg transition height
 if DISPENSER == 'side':
     FLOOR = SIDE_FLOOR
-elif DISPENSER == 'button':
+elif DISPENSER in ('button', 'front'):
     FLOOR = BTN_FLOOR
 elif DISPENSER:
     FLOOR = REB + CHAMF + 0.4         # raise the floor above the stacking foot so the slot clears it
@@ -734,6 +756,292 @@ def build_button_mechanism(ctx, lbl, w, h, cx, cy):
     return sled, lever, btn, g
 
 
+# ---------------------------------------------------------------- front press lever (v5)
+def front_geometry(w, h, cx, cy):
+    """Positions for the front press lever at rest (mm). The crank swings CRANK_SWING; the lever turns +-th."""
+    sp = SPRINGS[BTN_SPRING]
+    W, H = dims(w, h)
+    pw, ph = w + 2 * CLR, h + 2 * CLR
+    g = {'W': W, 'H': H, 'pw': pw, 'ph': ph, 'sp': sp}
+    g['x_pw'], g['x_ow'] = cx + pw / 2, cx + W / 2
+    g['y_o'] = cy - H / 2
+    g['y_pb'], g['y_pf'] = cy + ph / 2, cy - ph / 2
+    th = math.asin(TRAVEL / (2 * FL_R_OUT))
+    g['th'] = th
+    ri, ro = PIN_D_IN / 2 + PIN_CLR, PIN_D_OUT / 2 + PIN_CLR
+    g['rp_in'], g['rp_out'] = ri, ro
+    g['xr'] = g['x_pw'] - PUSH_X                       # pusher bar centre line, under the pocket floor
+    px, py = g['xr'] - FL_R_IN, cy
+    g['pivot'] = (px, py)
+    g['push'] = 2 * FL_R_IN * math.sin(th)             # pusher travel (5 mm)
+    g['pin_in'] = (px + FL_R_IN * math.cos(th), py - FL_R_IN * math.sin(th))      # at rest
+    g['pin_out'] = (px - FL_R_OUT * math.cos(th), py + FL_R_OUT * math.sin(th))   # at rest
+    g['ear_slot'] = (px - FL_R_OUT - ro, px - FL_R_OUT * math.cos(th) + ro)
+    g['xb'] = g['ear_slot'][0] - 0.3
+    g['ear_x1'] = g['ear_slot'][1] + EAR_WALL
+    g['ear_y'] = (g['pin_out'][1] - ro - EAR_WALL, g['pin_out'][1] + ro + EAR_WALL)
+    g['z_gb'] = BTN_Z0
+    g['y_sb'] = g['y_pb'] + 0.6 + BLADE_T
+    g['y_gf'] = g['y_pf'] + 2.0
+    g['spring_len'] = spring_len(sp)
+    g['y_sf'] = g['y_gf'] - sp['preload'] + g['spring_len']
+    r = sp['pitch'] / 2
+    g['sx_r'] = g['xb'] - r - sp['beam'] / 2
+    g['sx_l'] = g['sx_r'] - sp['span']
+    g['spring_x0'] = g['sx_l'] - r - sp['beam'] / 2 - 0.4
+    g['lever_z0'] = BTN_Z0 + BTN_H + TUN_CLR[2] + ROOF_T + 0.2
+    g['hub_r'] = PIVOT_D / 2 + PIVOT_CLR + 2.0
+    # pusher: rear slot along x for the lever's short-arm pin (Scotch yoke), at rest
+    g['slot_y'] = g['pin_in'][1]
+    g['slot_x'] = (px + FL_R_IN * math.cos(th) - ri, px + FL_R_IN + ri)
+    g['rear_y'] = g['slot_y'] + ri + EAR_WALL
+    # crank housing at the front-right corner, outside the pocket
+    xo = g['x_ow']
+    g['crank_x'] = (xo + PUSH_GAP, xo + PUSH_GAP + CRANK_T)
+    g['fork_x'] = (g['crank_x'][1] + PUSH_GAP, g['crank_x'][1] + PUSH_GAP + FORK_T)
+    g['slot_x1'] = g['fork_x'][1] + PUSH_GAP
+    g['house_x1'] = g['slot_x1'] + HOUSE_WALL
+    a0 = math.radians(180 - CRANK_A0)                  # tab arm direction at rest: forward and up
+    g['a0'] = a0
+    g['swing'] = math.radians(CRANK_SWING)
+    yp = g['y_o'] + CRANK_Y
+    zp = CRANK_PIN_Z + CRANK_L2 * math.sin(math.radians(90 - CRANK_SWING / 2))
+    g['crank_p'] = (yp, zp)
+    g['cpin0'] = front_crank_pin(g, 0.0)
+    g['tab0'] = (yp + CRANK_L1 * math.cos(a0), zp + CRANK_L1 * math.sin(a0))
+    g['fork_y'] = (g['cpin0'][0] - CRANK_PIN_D / 2 - 0.2 - 2.0, g['cpin0'][0] + CRANK_PIN_D / 2 + 0.2 + 2.0)
+    g['jog_y'] = g['fork_y'][1] + 3.0                  # wide front section ends; the bar runs back from here
+    pin_lo = min(front_crank_pin(g, g['swing'] * k / 8)[1] for k in range(9))
+    g['fork_slot_z0'] = pin_lo - CRANK_PIN_D / 2 - 0.3
+    g['crank_zlo'] = pin_lo - CRANK_W / 2
+    if g['crank_zlo'] < BTN_Z0 + BTN_H + 0.4:
+        raise RuntimeError('crank reaches down into the pusher')
+    if g['jog_y'] + g['push'] + 1.0 > g['y_o'] + HOUSE_D - HOUSE_WALL:
+        raise RuntimeError('pusher front section leaves the housing')
+    if g['spring_x0'] < g['x_pw'] - g['pw'] - 0.5:
+        raise RuntimeError('spring does not fit the pocket width')
+    return g
+
+
+def sweep_pts(c, r, a0, a1, half, n=10):
+    """Closed outline swept by a bar of half-width `half` from c out to radius r as it turns from a0 to a1 (rad):
+    both side edges, the round ends at the two extreme positions, and the outer arc."""
+    def at(cc, rr, t):
+        return (cc[0] + rr * math.cos(t), cc[1] + rr * math.sin(t))
+    p1, p0 = at(c, r, a1), at(c, r, a0)
+    pts = [at(c, half, a1 + math.pi / 2)]
+    pts += [at(p1, half, a1 + math.pi / 2 - (math.pi / 2) * k / 4) for k in range(5)]      # side edge, round end
+    pts += [at(c, r + half, a1 - (a1 - a0) * k / n) for k in range(1, n)]                  # outer arc
+    pts += [at(p0, half, a0 - (math.pi / 2) * k / 4) for k in range(5)]                    # round end, side edge
+    pts.append(at(c, half, a0 - math.pi / 2))
+    return pts
+
+
+def front_crank_pin(g, phi):
+    """Crank pin (y, z) when the crank has swung phi (rad) from rest; the down-arm is 90 deg past the tab arm."""
+    yp, zp = g['crank_p']
+    a = g['a0'] + math.pi / 2 + phi
+    return (yp + CRANK_L2 * math.cos(a), zp + CRANK_L2 * math.sin(a))
+
+
+def front_cuts(ctx, body, w, h, cx, cy):
+    """Housing (joined), groove, spring pocket, blade bay, ear channel, pusher tunnel, pin slot, lever pocket, pivot
+    post, crank slot and axle hole."""
+    g = front_geometry(w, h, cx, cy)
+    sp, cut = g['sp'], adsk.fusion.FeatureOperations.CutFeatureOperation
+    join = adsk.fusion.FeatureOperations.JoinFeatureOperation
+    px, py = g['pivot']
+    th, zb, yo = g['th'], g['z_gb'], g['y_o']
+    box(ctx, 'Lever Housing', g['x_pw'] + 0.5, g['house_x1'], yo, yo + HOUSE_D, 0, TRAY_H, join, body)
+    x0, x1 = g['xb'] - SLED_W - 0.3, g['xb'] + 0.3
+    box(ctx, 'Sled Groove', x0, x1, g['y_gf'], g['y_pb'] + WALL + 1, zb, FLOOR, cut, body)
+    box(ctx, 'Spring Pocket', g['spring_x0'], x1, g['y_gf'], g['y_sf'] + HEADER_T + 0.5, zb, FLOOR, cut, body)
+    box(ctx, 'Blade Bay', x0, x1, g['y_pb'] - 0.01, g['y_pb'] + WALL + 1, FLOOR - 0.01, FLOOR + BLADE_UP + 0.3, cut, body)
+    box(ctx, 'Ear Channel', x1 - 0.01, g['ear_x1'] + 0.3, g['ear_y'][0] - TRAVEL - 0.5, g['ear_y'][1], zb, FLOOR, cut, body)
+    tz0, tz1 = BTN_Z0 - TUN_CLR[1], BTN_Z0 + BTN_H + TUN_CLR[2]
+    c, xr, hw = TUN_CLR[0], g['xr'], PUSH_W / 2
+    # pusher tunnel: wide front section (open at the front face to slide the pusher in), then the bar
+    box(ctx, 'Pusher Tunnel Front', xr - hw - c, g['fork_x'][1] + c, yo - 1, g['jog_y'] + g['push'] + 0.5, tz0, tz1, cut, body)
+    box(ctx, 'Pusher Tunnel', xr - hw - c, xr + hw + c, g['jog_y'] - 1, g['rear_y'] + g['push'] + 0.5, tz0, tz1, cut, body)
+    # curved slot through the tunnel roof for the short-arm pin
+    rs = g['rp_in'] + 0.3
+    m = math.asin(rs / FL_R_IN) + math.radians(2)
+    sk = ctx.sketch(tz1 - 0.01, 'Input Pin Slot')
+    polygon(sk, annulus_pts(g['pivot'], FL_R_IN - rs, FL_R_IN + rs, -th - m, th + m))
+    ctx.extrude(sk.profiles.item(0), ROOF_T + 0.22, cut, 'Input Pin Slot', body)   # through the roof only
+    # lever pocket, open to the floor: hub plus each arm (0.5 mm oversize) at nine points across its swing
+    zl = g['lever_z0'] - 0.2
+    sk = ctx.sketch(zl, 'Lever Pocket')
+    # hub circle plus one outline per arm for its whole swing (18 overlapping stadiums left near-coincident edges
+    # that broke the boolean)
+    sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(px * MM, py * MM, 0), (g['hub_r'] + 0.9) * MM)
+    for r_arm, mid, wd in ((FL_R_IN, 0.0, PIN_D_IN + 2 * PIN_PAD), (FL_R_OUT, math.pi, max(LEVER_W, PIN_D_OUT + 2 * PIN_PAD))):
+        polygon(sk, sweep_pts(g['pivot'], r_arm, mid - th, mid + th, (wd + 1.0) / 2))
+    profs = adsk.core.ObjectCollection.create()
+    for p_ in sk.profiles:
+        profs.add(p_)
+    ctx.extrude(profs, FLOOR - zl + 0.01, cut, 'Lever Pocket', body)
+    sk = ctx.sketch(zl, 'Pivot Post')
+    sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(px * MM, py * MM, 0), PIVOT_D / 2 * MM)
+    ctx.extrude(sk.profiles.item(0), g['lever_z0'] + LEVER_T - zl, join, 'Pivot Post', body)
+    # crank slot through the housing: open at the top (drop the crank in) and at the front (tab swing)
+    yp, zp = g['crank_p']
+    y_back = max(g['fork_y'][1] + g['push'], yp + 4.5) + 0.8
+    box(ctx, 'Crank Slot', g['x_ow'], g['slot_x1'], yo - 1, y_back, g['crank_zlo'] - 0.5, TRAY_H + 1, cut, body)
+    # axle hole: through the outer housing wall, blind 2 mm into the right wall
+    sk = ctx.root.sketches.add(yz_plane(ctx, g['x_ow'] - 2.0))
+    sk.name = 'Axle Hole'
+    sk.isVisible = False
+    sk.sketchCurves.sketchCircles.addByCenterRadius(sk.modelToSketchSpace(P3.create((g['x_ow'] - 2.0) * MM, yp * MM, zp * MM)),
+                                                    (AXLE_D / 2 + 0.1) * MM)
+    ext = ctx.root.features.extrudeFeatures
+    for direction in (adsk.fusion.ExtentDirections.PositiveExtentDirection, adsk.fusion.ExtentDirections.NegativeExtentDirection):
+        ei = ext.createInput(sk.profiles.item(0), cut)
+        ei.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(VI.createByReal((g['house_x1'] - g['x_ow'] + 3) * MM)), direction)
+        ei.participantBodies = [body]
+        f = ext.add(ei)
+        bb = f.bodies.item(0).boundingBox if f.bodies.count else None
+        # keep the direction that cut toward +X (the housing), undo the other
+        probe = adsk.core.Point3D.create((g['house_x1'] - 0.5) * MM, yp * MM, zp * MM)
+        if body.pointContainment(probe) != adsk.fusion.PointContainment.PointInsidePointContainment:
+            f.name = 'Axle Hole'
+            break
+        f.deleteMe()
+    return g
+
+
+def yz_body(ctx, x, dist, loops, name):
+    """New body from (y, z) loops (polygons, or ('circle', (y, z), r)) drawn on the plane X = x, extruded +X."""
+    sk = ctx.root.sketches.add(yz_plane(ctx, x))
+    sk.name = name
+    sk.isVisible = False
+    for lp in loops:
+        if lp[0] == 'circle':
+            sk.sketchCurves.sketchCircles.addByCenterRadius(sk.modelToSketchSpace(P3.create(x * MM, lp[1][0] * MM, lp[1][1] * MM)),
+                                                            lp[2] * MM)
+            continue
+        sp = [sk.modelToSketchSpace(P3.create(x * MM, y * MM, z * MM)) for y, z in lp]
+        L = sk.sketchCurves.sketchLines
+        first = prev = None
+        for i in range(len(sp)):
+            prev = L.addByTwoPoints(prev.endSketchPoint if prev else sp[0], first.startSketchPoint if i == len(sp) - 1 else sp[i + 1])
+            first = first or prev
+    profs = adsk.core.ObjectCollection.create()
+    for p_ in sk.profiles:
+        profs.add(p_)
+    ext = ctx.root.features.extrudeFeatures
+    for direction in (adsk.fusion.ExtentDirections.PositiveExtentDirection, adsk.fusion.ExtentDirections.NegativeExtentDirection):
+        ei = ext.createInput(profs, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+        ei.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(VI.createByReal(dist * MM)), direction)
+        f = ext.add(ei)
+        b = f.bodies.item(0)
+        if b.boundingBox.minPoint.x > (x - 0.01) * MM:
+            f.name = name
+            b.name = name
+            return b
+        f.deleteMe()
+    raise RuntimeError('yz_body failed: ' + name)
+
+
+def build_front_mechanism(ctx, lbl, w, h, cx, cy):
+    """Sled, straight lever, pusher, crank and axle, all at rest."""
+    g = front_geometry(w, h, cx, cy)
+    sp, zb, th = g['sp'], g['z_gb'], g['th']
+    new = adsk.fusion.FeatureOperations.NewBodyFeatureOperation
+    join = adsk.fusion.FeatureOperations.JoinFeatureOperation
+    cut = adsk.fusion.FeatureOperations.CutFeatureOperation
+    xb = g['xb']
+    # sled: as the button version
+    sled = box(ctx, lbl + ' Sled', xb - SLED_W, xb, g['y_sf'], g['y_sb'], zb, zb + SLED_H, new).bodies.item(0)
+    sled.name = lbl + ' Front Sled'
+    box(ctx, lbl + ' Blade', xb - SLED_W, xb, g['y_sb'] - BLADE_T, g['y_sb'], zb, FLOOR + BLADE_UP, join, sled)
+    box(ctx, lbl + ' Sled Ear', xb - 0.01, g['ear_x1'], g['ear_y'][0], g['ear_y'][1], zb, zb + SLED_H, join, sled)
+    box(ctx, lbl + ' Ear Slot', g['ear_slot'][0], g['ear_slot'][1], g['pin_out'][1] - g['rp_out'], g['pin_out'][1] + g['rp_out'],
+        zb - 0.1, zb + SLED_H + 0.1, cut, sled)
+    box(ctx, lbl + ' Spring Header', g['sx_l'], xb, g['y_sf'], g['y_sf'] + HEADER_T, zb, zb + sp['h'], join, sled)
+    meander(ctx, lbl, sled, sp, g['sx_l'], g['sx_r'], g['y_sf'], zb)
+
+    # straight 3:1 lever at rest, pins pointing down
+    zl = g['lever_z0']
+    px, py = g['pivot']
+    sk = ctx.sketch(zl, lbl + ' Lever')
+    sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(px * MM, py * MM, 0), g['hub_r'] * MM)
+    polygon(sk, stadium_pts(g['pivot'], g['pin_in'], PIN_D_IN + 2 * PIN_PAD))
+    polygon(sk, stadium_pts(g['pivot'], g['pin_out'], LEVER_W))
+    sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(g['pin_out'][0] * MM, g['pin_out'][1] * MM, 0),
+                                                    (PIN_D_OUT / 2 + PIN_PAD) * MM)
+    profs = adsk.core.ObjectCollection.create()
+    for p_ in sk.profiles:
+        profs.add(p_)
+    lever = ctx.extrude(profs, LEVER_T, new, lbl + ' Lever').bodies.item(0)
+    lever.name = lbl + ' Front Lever'
+    sk = ctx.sketch(zl, lbl + ' Lever Hole')
+    sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(px * MM, py * MM, 0), (PIVOT_D / 2 + PIVOT_CLR) * MM)
+    ctx.extrude(sk.profiles.item(0), LEVER_T, cut, lbl + ' Lever Hole', lever)
+    sk = ctx.sketch(zl, lbl + ' Lever Pins')
+    for p_, d in ((g['pin_in'], PIN_D_IN), (g['pin_out'], PIN_D_OUT)):
+        sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(p_[0] * MM, p_[1] * MM, 0), d / 2 * MM)
+    profs = adsk.core.ObjectCollection.create()
+    for p_ in sk.profiles:
+        profs.add(p_)
+    ctx.extrude(profs, zl - (BTN_Z0 + 0.3), join, lbl + ' Lever Pins', lever, negative=True)
+    roots = adsk.core.ObjectCollection.create()
+    for e in lever.edges:
+        c = adsk.core.Circle3D.cast(e.geometry)
+        if c and abs(c.center.z - zl * MM) < 1e-4 and any(abs(c.radius - d / 2 * MM) < 1e-4 for d in (PIN_D_IN, PIN_D_OUT)):
+            roots.add(e)
+    if roots.count != 2:
+        raise RuntimeError('expected 2 pin root edges, found %d' % roots.count)
+    fl = ctx.root.features.filletFeatures
+    fi = fl.createInput()
+    fi.edgeSetInputs.addConstantRadiusEdgeSet(roots, VI.createByReal(PIN_FILLET * MM), True)
+    fl.add(fi).name = lbl + ' Pin Root Fillets'
+
+    # pusher at rest: wide front section with the fork, bar back to the yoke slot
+    xr, hw, z0, z1 = g['xr'], PUSH_W / 2, BTN_Z0, BTN_Z0 + BTN_H
+    push = box(ctx, lbl + ' Pusher', xr - hw, g['fork_x'][1], g['fork_y'][0], g['jog_y'], z0, z1, new).bodies.item(0)
+    push.name = lbl + ' Front Pusher'
+    box(ctx, lbl + ' Pusher Bar', xr - hw, xr + hw, g['jog_y'] - 1, g['rear_y'], z0, z1, join, push)
+    box(ctx, lbl + ' Pusher Fork', g['fork_x'][0], g['fork_x'][1], g['fork_y'][0], g['fork_y'][1], z0, FORK_TOP, join, push)
+    yc = g['cpin0'][0]
+    box(ctx, lbl + ' Fork Slot', g['fork_x'][0] - 0.1, g['fork_x'][1] + 0.1, yc - CRANK_PIN_D / 2 - 0.2, yc + CRANK_PIN_D / 2 + 0.2,
+        g['fork_slot_z0'], FORK_TOP + 0.1, cut, push)
+    box(ctx, lbl + ' Pusher Slot', g['slot_x'][0], g['slot_x'][1], g['slot_y'] - g['rp_in'], g['slot_y'] + g['rp_in'],
+        z0 - 0.1, z1 + 0.1, cut, push)
+
+    # crank at rest: hub, tab arm with a finger pad, down-arm with a pin toward the fork
+    yp, zp = g['crank_p']
+    cp, tab = g['cpin0'], g['tab0']
+    pad = rounded_rect_pts(tab[0] - 2.0, tab[1] - 3.5, 12.0, 7.0, 2.5, 2.5)
+    loops = [('circle', (yp, zp), 4.5), stadium_pts((yp, zp), tab, CRANK_W), stadium_pts((yp, zp), cp, CRANK_W), pad]
+    crank = yz_body(ctx, g['crank_x'][0], CRANK_T, loops, lbl + ' Front Crank')
+    sk = ctx.root.sketches.add(yz_plane(ctx, g['crank_x'][0]))
+    sk.isVisible = False
+    sk.sketchCurves.sketchCircles.addByCenterRadius(sk.modelToSketchSpace(P3.create(g['crank_x'][0] * MM, yp * MM, zp * MM)),
+                                                    (AXLE_D / 2 + 0.2) * MM)
+    for direction in (adsk.fusion.ExtentDirections.PositiveExtentDirection, adsk.fusion.ExtentDirections.NegativeExtentDirection):
+        ei = ctx.root.features.extrudeFeatures.createInput(sk.profiles.item(0), cut)
+        ei.setOneSideExtent(adsk.fusion.DistanceExtentDefinition.create(VI.createByReal((CRANK_T + 1) * MM)), direction)
+        ei.participantBodies = [crank]
+        try:
+            ctx.root.features.extrudeFeatures.add(ei).name = lbl + ' Crank Axle Hole'
+            break
+        except RuntimeError:
+            continue
+    pin = yz_body(ctx, g['crank_x'][1] - 0.01, g['fork_x'][1] - 0.1 - g['crank_x'][1] + 0.01,   # ends inside the fork
+                  [('circle', cp, CRANK_PIN_D / 2)], lbl + ' Crank Pin')
+    ctx.root.features.combineFeatures.add(ctx.root.features.combineFeatures.createInput(crank, adsk.core.ObjectCollection.createWithArray([pin])))
+    crank.name = lbl + ' Front Crank'
+
+    # axle: head outside the housing, shank through the crank into the right wall
+    shank = g['house_x1'] - (g['x_ow'] - 2.0) - 0.2
+    axle = yz_body(ctx, g['x_ow'] - 1.8, shank, [('circle', (yp, zp), AXLE_D / 2)], lbl + ' Crank Axle')
+    head = yz_body(ctx, g['house_x1'], 1.5, [('circle', (yp, zp), AXLE_D / 2 + 1.5)], lbl + ' Axle Head')
+    ctx.root.features.combineFeatures.add(ctx.root.features.combineFeatures.createInput(axle, adsk.core.ObjectCollection.createWithArray([head])))
+    axle.name = lbl + ' Crank Axle'
+    return sled, lever, push, crank, axle, g
+
+
 def xz_prism(ctx, name, pts, y0, y1, op, body):
     """Prism along Y from y0 to y1 whose cross-section is the closed (x, z) outline pts."""
     ym = (y0 + y1) / 2
@@ -795,8 +1103,8 @@ def build_tray(ctx, lbl, w, h, cx, cy):
     # Full-height front notch, biting into the floor so the bottom blank can be pushed up
     yo, yi, r = cy - H / 2, cy - H / 2 + WALL, NOTCH_W / 2
     pw = w + 2 * CLR
-    slot_h = FRONT_GAP if DISPENSER == 'button' else SLOT_H
-    if DISPENSER == 'button':
+    slot_h = FRONT_GAP if DISPENSER in ('button', 'front') else SLOT_H
+    if DISPENSER in ('button', 'front'):
         # open front: the opening narrows at 45 degrees from the two flat stops, then runs straight up
         xs, xt, zb = pw / 2 - FRONT_STOP, pw / 2 - FRONT_STUB, FLOOR + slot_h
         zt = zb + (FRONT_STUB - FRONT_STOP)
@@ -814,7 +1122,7 @@ def build_tray(ctx, lbl, w, h, cx, cy):
         L.addByTwoPoints(lb.endSketchPoint, lc.startSketchPoint)
     else:          # bite into the floor so the bottom blank can be pushed up from below
         A.addByThreePoints(lb.endSketchPoint, P3.create(cx * MM, (yi + r) * MM, 0), lc.startSketchPoint)
-    if DISPENSER != 'button':
+    if DISPENSER not in ('button', 'front'):
         ctx.cut_through(sk.profiles.item(0), n + ' Notch', body)
 
     if DISPENSER:
@@ -830,6 +1138,8 @@ def build_tray(ctx, lbl, w, h, cx, cy):
         side_cuts(ctx, body, w, h, cx, cy)
     elif DISPENSER == 'button':
         button_cuts(ctx, body, w, h, cx, cy)
+    elif DISPENSER == 'front':
+        front_cuts(ctx, body, w, h, cx, cy)
     elif DISPENSER == 'rear':
         # full-height finger notch through the back wall to push the bottom blank forward
         yb = cy + H / 2
@@ -843,7 +1153,7 @@ def build_tray(ctx, lbl, w, h, cx, cy):
     lh = label_h(lbl, W)
     x_l0, x_l1 = cx - W / 2 + R_OUT, cx - r
     z_lo, z_hi = (FLOOR + SLOT_H + 0.8 if DISPENSER else REB + CHAMF + 0.5), TRAY_H - REB - 0.5
-    if DISPENSER == 'button':   # label on the left stop, above its 45 degree part; the open front shows the stock
+    if DISPENSER in ('button', 'front'):   # label on the left stop, above its 45 degree part; the open front shows the stock
         x_l1 = cx - (pw / 2 - FRONT_STUB)
         lh = min(9.0, math.floor(0.8 * (x_l1 - x_l0) / (0.99 * len(lbl))))
         z_lo = FLOOR + slot_h + (FRONT_STUB - FRONT_STOP) + 0.8
@@ -852,7 +1162,14 @@ def build_tray(ctx, lbl, w, h, cx, cy):
     txt = face_text(ctx, sk, lbl, lh, x_l0, x_l1, (z_lo + z_hi) / 2 - lh / 2, yo,
                     adsk.core.HorizontalAlignments.CenterHorizontalAlignment)
     ctx.extrude(txt, LABEL_D, adsk.fusion.FeatureOperations.CutFeatureOperation, n + ' Label', body, negative=True)
-    if DISPENSER == 'button':
+    if TOWER_MAGNETS:
+        for sx in (-1, 1):
+            sk = ctx.sketch(0, n + ' Magnet')
+            sk.sketchCurves.sketchCircles.addByCenterRadius(
+                P3.create((cx + sx * MAGNET_DX) * MM, (cy - H / 2 + MAGNET_Y) * MM, 0), MAGNET_D / 2 * MM)
+            ctx.extrude(sk.profiles.item(0), MAGNET_T, adsk.fusion.FeatureOperations.CutFeatureOperation,
+                        n + ' Magnet', body)
+    if DISPENSER in ('button', 'front'):
         # the size again, big and bold, on the left wall above the floor (the right wall carries the button)
         z_mid = (FLOOR + TRAY_H - REB) / 2
         side_label(ctx, body, cx - W / 2, lbl, SIDE_LABEL_H, cy - H / 2 + R_OUT, cy + H / 2 - R_OUT,
@@ -898,6 +1215,17 @@ def build_lid(ctx, lbl, w, h, cx, cy):
     rrect(sk, cx, cy, pw, ph, pr)
     rrect(sk, cx, cy, pw - 2 * PLUG_WALL, ph - 2 * PLUG_WALL, max(pr - PLUG_WALL, 0.5))
     ctx.extrude(ring_profile(sk), PLUG_H, adsk.fusion.FeatureOperations.JoinFeatureOperation, n + ' Plug', body)
+    if TOWER_MAGNETS:
+        spots = [(cx + sx * MAGNET_DX, cy + sy * (H / 2 - MAGNET_Y)) for sx in (-1, 1) for sy in (-1, 1)]
+        for x, y in spots:
+            sk = ctx.sketch(LID_T, n + ' Magnet boss')
+            sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(x * MM, y * MM, 0), LID_BOSS_R * MM)
+            ctx.extrude(sk.profiles.item(0), MAGNET_T + 0.8 - LID_T, adsk.fusion.FeatureOperations.JoinFeatureOperation,
+                        n + ' Magnet boss', body)
+            sk = ctx.sketch(0, n + ' Magnet')
+            sk.sketchCurves.sketchCircles.addByCenterRadius(P3.create(x * MM, y * MM, 0), MAGNET_D / 2 * MM)
+            ctx.extrude(sk.profiles.item(0), MAGNET_T, adsk.fusion.FeatureOperations.CutFeatureOperation,
+                        n + ' Magnet', body)
     # Label on the outside (bed side while printing): reads correctly once flipped onto a tray
     bottom = next(f for f in body.faces if f.geometry.surfaceType == adsk.core.SurfaceTypes.PlaneSurfaceType
                   and abs(f.boundingBox.maxPoint.z) < 1e-6)
@@ -952,6 +1280,8 @@ def run(_context: str):
             split_seam(ctx, lid, xs[lbl], LID_ROW_Y, W, H, lbl + ' Lid')
         if DISPENSER == 'button':
             build_button_mechanism(ctx, lbl, w, h, xs[lbl], 0)
+        elif DISPENSER == 'front':
+            build_front_mechanism(ctx, lbl, w, h, xs[lbl], 0)
         elif DISPENSER == 'side':
             build_mechanism(ctx, lbl, w, h, xs[lbl], 0)
             for i, key in enumerate(TEST_SPRINGS):      # shifted clear of the tray, for printing

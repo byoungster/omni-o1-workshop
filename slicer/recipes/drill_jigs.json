@@ -1,5 +1,5 @@
 {
-  "description": "Shop drill guides (acrylic sheet corners): black PLA on smooth PEI, stiff walls around the guide hole.",
+  "description": "Shop jigs (acrylic sheet corner marking guide): black PLA on smooth PEI.",
   "machine": "Bambu Lab P1S 0.4 nozzle",
   "process": "0.20mm Standard @BBL X1C",
   "filament": "Bambu PLA Basic @BBL P1S 0.4 nozzle",
@@ -13,6 +13,7 @@
   },
   "changelog": [
     "2026-10-16  created for the acrylic corner drill guide: printed top-face down on smooth PEI (lips up), 4 walls so the 1/8 in guide hole is ringed in solid plastic",
-    "2026-10-16  model: guide hole 1/8 in pilot -> 7.5 mm (the mounting hardware needs a 7.5 mm hole); 4 walls still ring it in solid plastic"
+    "2026-10-16  model: guide hole 1/8 in pilot -> 7.5 mm (the mounting hardware needs a 7.5 mm hole); 4 walls still ring it in solid plastic",
+    "2026-10-16  model: now a marking guide (2.5 mm awl/pen hole with a centring cone); holes are drilled afterwards with a step bit or a drill press, so nothing spinning touches the PLA"
   ]
 }

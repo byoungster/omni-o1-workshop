@@ -7,6 +7,7 @@ venv/
 
 # Local state: contains machine-specific paths
 slicer/journal.jsonl
+slicer/test_results.jsonl
 slicer/settings_catalog.json
 exports/snapshots/
 

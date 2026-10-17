@@ -10,18 +10,20 @@ in the wall. Rail profile, bottom up:
 - a low guide lip that centres the plate. The mat's peel tab sticks 7 mm out past the plate edge at the top and
   rides over the lip;
 - the outer wall, 9 mm out from the plate edge, clear of the tab;
-- a top flange that hangs on #8 pan-head screws through keyhole slots. The screws sit inboard of the ledge, so a
+- a top flange that hangs on #8 pan-head screws through keyhole slots. The slots run across the flange, so the
+  keyholes print standing up (a teardrop head hole, no bridge). The screws sit inboard of the ledge, so a
   screwdriver reaches them from below through the empty slot.
 A lead-in at the front guides the plate in, and a wall at the back stops it.
 
 Installing (nothing to hold overhead while driving screws):
 1. Join a rail's two halves on the bench: slide the back half's dovetail tongue into the front half's socket.
-2. Mark the screws: hold the joined rail in place, front flush with the shelf front, and mark through the narrow
-   end of each keyhole. For the opposite rail, slide a plate into the first rail and hold the second rail
-   against the plate's other edge, so the plate sets the spacing. Neighbouring slots' rails sit back to back.
+2. Mark the screws: hold the joined rail in place, front flush with the shelf front, and mark through the slot
+   end of each keyhole (the end toward the plate). For the opposite rail, slide a plate into the first rail and
+   hold the second rail against the plate's other edge, so the plate sets the spacing. Neighbouring slots' rails
+   sit back to back.
 3. Drive the screws, leaving 4 mm under each head.
-4. Push the rail up so the heads pass through the round ends of the keyholes, slide it 10 mm back, and snug the
-   screws from below. Pushing a plate in presses the rail further into the lock.
+4. Hold the rail 10 mm toward the plate's side of its final place, push it up so the heads pass through the round
+   holes, slide it 10 mm outward (away from the plate) and snug the screws from below.
 
 Modelled as installed: the shelf underside is z = TOP, the plate rests at z = 0 and slides along +y from the
 front (y = 0). Each rail prints lying on its outer wall, with the ledge, lip and flange standing up: no overhangs
@@ -45,18 +47,21 @@ LIP_H = 6.0                # guide lip on the plate's lower edge, solid back to 
                            # (A 45 degree lip left a notch on the ledge's tension side: a creep risk in PLA; review)
 TOP_GAP = 5.0              # mat to flange: keeps dust off without touching the mat
 FL_T = 3.5
-FL_IN = 28.0               # flange reach inward, past the ledge, so a screwdriver reaches the screws from below
-SCREW_X = 19.0             # screw line, measured in from the plate edge
+FL_IN = 30.0               # flange reach inward, past the ledge, so a screwdriver reaches the screws from below
+SCREW_X = 23.0             # screw line when hung (slot end), measured in from the plate edge; clear of the ledge
 KEY_D, KEY_W, KEY_SLIDE = 9.6, 4.8, 10.0   # keyhole for #8 pan-head screws (8.4 mm head, 4.2 mm shank): head hole,
-                                           # slot width, slide. Hang the rail, then slide it back. Screws driven up
-                                           # through a held rail were awkward overhead (user, 2026-10-16)
+                                           # slot width, slide. Hang the rail, then slide it outward. Screws driven
+                                           # up through a held rail were awkward overhead (user, 2026-10-16).
+# The slot runs across the flange (along p), not along the rail: printed on its side, a slot along the rail left a
+# ~15 mm bridge over the hole that sagged (user, 2026-10-17). Across, the head hole gets a 45 degree teardrop top.
 SEG_L = 222.0              # each rail half; 2 x 222 = 444 = plate 434 + stop + front setback, and fits a 256 bed
 SCREW_Y = (25.0, SEG_L / 2, SEG_L - 25.0)
 STOP_T = 4.0
 STOP_H = 12.0              # back stop height: below the small plate's mat tab (top 1 mm of the plate)
 LEAD = 12.0                # front lead-in: the guide lip starts here, with a 45 degree flare
 DT_L, DT_W0, DT_W1 = 8.0, 8.0, 12.0   # dovetail in the wall: length, root and tip width
-DT_CLR = 0.25              # per side; the tongue and socket sit on the bed, where first-layer squish eats ~0.1
+DT_CLR = 0.15              # per side. Test pairs at 0.15 / 0.25 / 0.35 printed on the X1C: 0.15 fit best (user,
+                           # 2026-10-17); the review had guessed 0.25 to allow for first-layer squish
 DT_TEST = (0.15, 0.25, 0.35)   # dovetail test pairs
 JOINT_CH = 0.6             # chamfer on the back half's leading ledge and lip edges, so a plate can't catch the joint
 TEXT_H, TEXT_D = 9.0, 0.6
@@ -137,13 +142,17 @@ def rail(root, side, xe, kind, y0, label, length=None, dt_clr=DT_CLR, words=None
     body = slab(root, 'y', y0, y0 + L, [(X(p), z) for p, z in PROFILE], new, name).bodies.item(0)
     body.name = name
 
-    for sy in (() if stub else (L / 2,) if kind == 'test' else SCREW_Y):    # keyholes: round end at sy, slot to the front
-        xs, ys = X(SCREW_X), y0 + sy
-        slab(root, 'z', Z_FL - 1, TOP + 1, None, cut, name + ' keyhole', body, circle=((xs, ys), KEY_D / 2))
-        slab(root, 'z', Z_FL - 1, TOP + 1, [(xs - KEY_W / 2, ys), (xs + KEY_W / 2, ys), (xs + KEY_W / 2, ys - KEY_SLIDE),
-             (xs - KEY_W / 2, ys - KEY_SLIDE)], cut, name + ' keyhole slot', body)
-        slab(root, 'z', Z_FL - 1, TOP + 1, None, cut, name + ' keyhole end', body,
-             circle=((xs, ys - KEY_SLIDE), KEY_W / 2))
+    r, rs = KEY_D / 2, KEY_W / 2
+    ph = SCREW_X - KEY_SLIDE                       # head hole; the slot runs from it toward the plate (+p)
+    for sy in (() if stub else (L / 2,) if kind == 'test' else SCREW_Y):
+        ys = y0 + sy
+        slab(root, 'z', Z_FL - 1, TOP + 1, None, cut, name + ' keyhole head', body, circle=((X(ph), ys), r))
+        c45 = r * 0.7071                           # teardrop: 45 degree roof toward +p (up when printed)
+        slab(root, 'z', Z_FL - 1, TOP + 1, [(X(ph + c45), ys - c45), (X(ph + r * 1.4142), ys), (X(ph + c45), ys + c45),
+             (X(ph), ys)], cut, name + ' keyhole teardrop', body)
+        slab(root, 'z', Z_FL - 1, TOP + 1, [(X(ph), ys - rs), (X(SCREW_X), ys - rs), (X(SCREW_X), ys + rs),
+             (X(ph), ys + rs)], cut, name + ' keyhole slot', body)
+        slab(root, 'z', Z_FL - 1, TOP + 1, None, cut, name + ' keyhole end', body, circle=((X(SCREW_X), ys), rs))
 
     xw = sorted((X(P_WO), X(P_WI)))
     if kind in ('front', 'test'):     # lead-in: no lip for LEAD mm, then a 45 degree flare
